@@ -1,0 +1,776 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Accueil</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Hanken+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F4F5F4; --panel:#FFFFFF; --raised:#F1F2F0;
+  --ink:#15171A; --muted:#5E646B;
+  --line:rgba(21,23,26,.10); --line-strong:rgba(21,23,26,.38);
+  --accent:#8A6A2F; --dot-off:rgba(21,23,26,.14);
+  --serif:'Instrument Serif',Georgia,serif;
+  --sans:'Hanken Grotesk',system-ui,-apple-system,sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#0E0F11; --panel:#16181B; --raised:#1F2226;
+    --ink:#ECEDEE; --muted:#9AA0A6;
+    --line:rgba(255,255,255,.09); --line-strong:rgba(255,255,255,.42);
+    --accent:#D4B26A; --dot-off:rgba(255,255,255,.16);
+  }
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg); color:var(--ink); font-family:var(--sans); -webkit-font-smoothing:antialiased; min-height:100vh}
+.shell{max-width:1240px; margin:0 auto; padding:16px clamp(16px,5vw,56px) 80px; display:flex; flex-direction:column; gap:40px}
+button,textarea,input{font-family:inherit; color:inherit; font-size:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent); outline-offset:3px}
+
+.topbar{border-bottom:1px solid var(--line)}
+nav{display:flex; flex-wrap:wrap; align-items:center; gap:2px 26px; min-width:0}
+.tab{background:none; border:0; min-height:48px; padding:0 2px; font-size:15px; font-weight:500; color:var(--muted); border-bottom:1.5px solid transparent; margin-bottom:-1px; white-space:nowrap}
+.tab:hover{color:var(--ink)}
+.tab[aria-selected="true"]{color:var(--ink); font-weight:600; border-bottom-color:var(--accent)}
+.gear{margin-left:auto; background:none; border:0; min-height:48px; min-width:44px; display:flex; align-items:center; justify-content:center; gap:8px; color:var(--muted); padding:0 6px; font-size:14px}
+.gear:hover{color:var(--ink)}
+.gear[aria-selected="true"]{color:var(--ink)}
+
+h1{margin:0; font-family:var(--serif); font-weight:400; font-size:clamp(38px,7vw,78px); line-height:1.02; letter-spacing:-.02em}
+h2{margin:0; font-family:var(--serif); font-weight:400; font-size:30px}
+h3{margin:0; font-size:16px; font-weight:600}
+.head{display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:18px}
+.wx{display:flex; align-items:center; gap:14px; min-height:44px}
+.temp{font-family:var(--serif); font-size:38px; line-height:1}
+.sub{font-size:14px; color:var(--muted)}
+
+figure.quote{margin:0; padding:30px 0; border-top:1px solid var(--line); border-bottom:1px solid var(--line); display:flex; flex-wrap:wrap; align-items:baseline; justify-content:space-between; gap:8px 32px}
+blockquote{margin:0; max-width:46ch; font-family:var(--serif); font-style:italic; font-size:clamp(24px,3vw,34px); line-height:1.25; text-wrap:pretty}
+
+.cols{display:flex; flex-wrap:wrap; gap:40px 56px; align-items:flex-start}
+.panel{background:var(--panel); border:1px solid var(--line); border-radius:24px}
+.agenda{flex:3 1 440px; min-width:0; padding:28px clamp(18px,3vw,36px) 22px; display:flex; flex-direction:column; gap:16px}
+.tasks{flex:2 1 290px; min-width:0; display:flex; flex-direction:column; gap:16px}
+.rowhead{display:flex; align-items:baseline; justify-content:space-between; gap:12px; flex-wrap:wrap}
+
+ol.ev,ul.tk,ul.nl{list-style:none; margin:0; padding:0}
+.ev li{display:flex; gap:16px; padding:16px 12px; border-top:1px solid var(--line)}
+.ev li:first-child{border-top:0}
+.ev li.now{background:var(--raised); border-radius:14px; border-top-color:transparent}
+.ev time,.ev .allday{flex:0 0 62px; font-size:15px; font-weight:500; font-variant-numeric:tabular-nums; display:flex; align-items:center; gap:8px}
+.ev li.now time{font-weight:600}
+.ev .pin{width:8px; height:8px; border-radius:50%; background:var(--accent); flex:none}
+.ev .what{display:flex; flex-direction:column; gap:3px; min-width:0}
+.ev .ttl{font-size:17px; font-weight:500; overflow-wrap:anywhere}
+.ev li.now .ttl{font-size:19px; font-weight:600}
+.ev li.past time,.ev li.past .ttl{color:var(--muted)}
+
+.tk li{border-top:1px solid var(--line); display:flex; align-items:center; gap:6px}
+.tkbtn{flex:1 1 auto; min-width:0; min-height:60px; background:none; border:0; padding:11px 0; display:flex; align-items:center; gap:15px; text-align:left}
+.box{flex:none; width:22px; height:22px; border-radius:50%; border:1.5px solid var(--line-strong); display:flex; align-items:center; justify-content:center}
+.tkbtn[aria-pressed="true"] .box{border-color:var(--accent); background:var(--accent)}
+.box svg{display:none}
+.tkbtn[aria-pressed="true"] .box svg{display:block}
+.tklab{font-size:17px; font-weight:500; min-width:0; overflow-wrap:anywhere}
+.tkbtn[aria-pressed="true"] .tklab{color:var(--muted); text-decoration:line-through}
+.tkdue{font-size:13px; color:var(--muted)}
+.kill{flex:none; width:44px; height:44px; border:0; background:none; border-radius:50%; color:var(--muted); display:flex; align-items:center; justify-content:center; opacity:0}
+.tk li:hover .kill,.nl li:hover .kill,.kill:focus-visible{opacity:1}
+.kill:hover{color:var(--ink); background:var(--raised)}
+@media (hover:none){.kill{opacity:1}}
+
+.adder{display:flex; gap:10px; padding-top:12px; border-top:1px solid var(--line)}
+.adder input{flex:1 1 auto; min-width:0; min-height:46px; background:var(--raised); border:1px solid var(--line); border-radius:12px; padding:0 14px}
+input::placeholder,textarea::placeholder{color:var(--muted)}
+.btn{min-height:46px; padding:0 20px; border:0; border-radius:999px; background:var(--ink); color:var(--bg); font-weight:600; font-size:15px; white-space:nowrap}
+.btn:hover{opacity:.88}
+.btn.ghost{background:var(--raised); color:var(--ink); border:1px solid var(--line)}
+
+.habits{display:grid; grid-template-columns:repeat(auto-fit,minmax(min(230px,100%),1fr)); gap:16px}
+.habit{text-align:left; min-height:146px; padding:19px 21px; border-radius:20px; background:var(--panel); border:1px solid var(--line); display:flex; flex-direction:column; justify-content:space-between; gap:14px}
+.habit[aria-pressed="true"]{border-color:var(--accent)}
+.habit:hover{border-color:var(--line-strong)}
+.habit .top{display:flex; align-items:baseline; justify-content:space-between; gap:10px}
+.habit .nm{font-size:17px; font-weight:600}
+.habit .mark{flex:none; width:22px; height:22px; border-radius:50%; border:1.5px solid var(--line-strong); display:flex; align-items:center; justify-content:center}
+.habit[aria-pressed="true"] .mark{border-color:var(--accent); background:var(--accent)}
+.habit .mark svg{display:none}
+.habit[aria-pressed="true"] .mark svg{display:block}
+.habit .big{display:flex; align-items:baseline; gap:7px}
+.habit .n{font-family:var(--serif); font-size:42px; line-height:1; font-variant-numeric:tabular-nums}
+.week{display:flex; gap:7px}
+.week span{width:9px; height:9px; border-radius:50%; background:var(--dot-off); flex:none}
+.week span.on{background:var(--accent)}
+.week span.today{box-shadow:0 0 0 3px var(--panel),0 0 0 4.5px var(--line-strong)}
+
+.note{padding:26px clamp(18px,3vw,34px); display:flex; flex-wrap:wrap; gap:18px 40px; align-items:flex-start}
+.note .left{flex:1 1 200px; min-width:0; display:flex; flex-direction:column; gap:8px}
+.note p{margin:0; font-size:14px; line-height:1.5; color:var(--muted); max-width:32ch}
+.note .right{flex:2 1 340px; min-width:0; display:flex; flex-direction:column; gap:12px}
+textarea{width:100%; resize:vertical; background:var(--raised); border:1px solid var(--line); border-radius:14px; padding:13px 15px; font-size:16px; line-height:1.5}
+.act{display:flex; justify-content:flex-end; gap:12px; align-items:center}
+.flash{font-size:14px; color:var(--accent); opacity:0; transition:opacity .2s}
+.flash.show{opacity:1}
+.link{background:none; border:0; padding:0; font-size:15px; font-weight:500; color:var(--accent); text-align:left; min-height:44px; display:inline-flex; align-items:center; align-self:flex-start}
+.link:hover{text-decoration:underline}
+
+.nl li{border-top:1px solid var(--line); padding:16px 2px; display:flex; gap:12px; align-items:flex-start}
+.nl .txt{font-size:16px; line-height:1.55; white-space:pre-wrap; overflow-wrap:anywhere}
+.nl .when{font-size:13px; color:var(--muted); margin-top:5px}
+.empty{padding:28px 0; color:var(--muted); font-size:16px; line-height:1.6; max-width:52ch}
+.empty.ruled{border-top:1px solid var(--line)}
+.state{display:flex; flex-direction:column; align-items:flex-start; gap:14px; padding:26px 0; color:var(--muted); font-size:16px; line-height:1.6; max-width:46ch}
+.vh{position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap}
+[hidden]{display:none !important}
+.view{display:flex; flex-direction:column; gap:40px}
+.form{display:flex; flex-direction:column; gap:10px; max-width:560px}
+.form input{min-height:48px; background:var(--raised); border:1px solid var(--line); border-radius:12px; padding:0 14px; width:100%}
+.steps{margin:0; padding-left:22px; display:flex; flex-direction:column; gap:10px; font-size:15px; line-height:1.6; max-width:64ch}
+.steps code{background:var(--raised); border:1px solid var(--line); border-radius:6px; padding:1px 6px; font-size:13px; overflow-wrap:anywhere}
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <div class="topbar">
+    <nav role="tablist" aria-label="Onglets">
+      <button class="tab" role="tab" id="tab-today" aria-controls="view-today" aria-selected="true">Aujourd'hui</button>
+      <button class="tab" role="tab" id="tab-life" aria-controls="view-life" aria-selected="false">Life Center</button>
+      <button class="tab" role="tab" id="tab-notes" aria-controls="view-notes" aria-selected="false">Notes</button>
+      <button class="tab" role="tab" id="tab-finance" aria-controls="view-finance" aria-selected="false">Finance</button>
+      <button class="tab" role="tab" id="tab-sante" aria-controls="view-sante" aria-selected="false">Santé</button>
+      <button class="tab" role="tab" id="tab-bureau" aria-controls="view-bureau" aria-selected="false">Bureau</button>
+  <button class="gear" role="tab" id="tab-reglages" aria-controls="view-reglages" aria-selected="false">
+      <svg aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      Réglages
+    </button>
+    </nav>
+
+  </div>
+
+  <!-- AUJOURD'HUI -->
+  <div class="view" id="view-today" role="tabpanel" aria-labelledby="tab-today">
+
+    <header class="head">
+      <h1 id="dateline">—</h1>
+      <div class="wx" id="wx" hidden>
+        <span id="wx-icon"></span>
+        <span style="display:flex; flex-direction:column; gap:2px">
+          <span class="temp" id="wx-temp"></span>
+          <span class="sub" id="wx-desc"></span>
+        </span>
+      </div>
+    </header>
+
+    <figure class="quote">
+      <blockquote id="quote-text">—</blockquote>
+      <figcaption class="sub" id="quote-author"></figcaption>
+    </figure>
+
+    <div class="cols">
+      <section class="panel agenda" aria-labelledby="h-agenda">
+        <div class="rowhead">
+          <h2 id="h-agenda">Agenda</h2>
+          <span class="sub" id="agenda-note"></span>
+        </div>
+        <div id="agenda-body"></div>
+      </section>
+
+      <section class="tasks" aria-labelledby="h-tasks">
+        <div class="rowhead">
+          <h2 id="h-tasks">À faire</h2>
+          <span class="sub" id="task-count"></span>
+        </div>
+        <ul class="tk" id="task-list"></ul>
+        <form class="adder" id="task-form">
+          <label class="vh" for="task-new">Nouvelle tâche</label>
+          <input id="task-new" placeholder="Ajouter une tâche" autocomplete="off">
+          <button class="btn" type="submit">Ajouter</button>
+        </form>
+      </section>
+    </div>
+
+    <section aria-labelledby="h-habits" style="display:flex; flex-direction:column; gap:16px">
+      <div class="rowhead">
+        <h2 id="h-habits">Habitudes</h2>
+        <span class="sub" id="habit-count"></span>
+      </div>
+      <div class="habits" id="habit-grid"></div>
+    </section>
+
+    <section class="panel note" aria-labelledby="h-note">
+      <div class="left">
+        <h2 id="h-note">Note rapide</h2>
+        <p>Ce que tu écris ici arrive dans l'onglet Notes, prêt à être rattaché.</p>
+        <button class="link" id="go-notes">Ouvrir les notes</button>
+      </div>
+      <div class="right">
+        <label class="vh" for="note-input">Note rapide</label>
+        <textarea id="note-input" rows="3" placeholder="Une idée, un nom, un chiffre à ne pas perdre…"></textarea>
+        <div class="act">
+          <span class="flash" id="note-flash" role="status">Note enregistrée</span>
+          <button class="btn" id="note-save">Enregistrer la note</button>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- NOTES -->
+  <div class="view" id="view-notes" role="tabpanel" aria-labelledby="tab-notes" hidden>
+    <header class="head"><h1>Notes</h1></header>
+    <section aria-labelledby="h-inbox" style="display:flex; flex-direction:column; gap:14px">
+      <div class="rowhead">
+        <h2 id="h-inbox">Boîte de réception</h2>
+        <span class="sub" id="note-count"></span>
+      </div>
+      <ul class="nl" id="note-list"></ul>
+      <p class="empty ruled" id="note-empty" hidden>Rien pour l'instant. Écris une note rapide depuis l'onglet Aujourd'hui et elle atterrira ici.</p>
+    </section>
+  </div>
+
+  <!-- RÉGLAGES -->
+  <div class="view" id="view-reglages" role="tabpanel" aria-labelledby="tab-reglages" hidden>
+    <header class="head"><h1>Réglages</h1></header>
+    <section aria-labelledby="h-gcal" style="display:flex; flex-direction:column; gap:16px">
+      <h2 id="h-gcal">Calendrier Google</h2>
+      <p class="empty" style="padding:0">L'app lit ton agenda directement depuis ton navigateur. Rien n'est envoyé ailleurs, et aucun mot de passe n'est stocké. Il te faut un identifiant client OAuth, à créer une fois.</p>
+      <form class="form" id="gcal-form">
+        <label for="gcal-id" style="font-size:15px; font-weight:500">Identifiant client OAuth</label>
+        <input id="gcal-id" placeholder="000000000000-xxxxxxxx.apps.googleusercontent.com" autocomplete="off" spellcheck="false">
+        <div class="act" style="justify-content:flex-start">
+          <button class="btn" type="submit">Enregistrer</button>
+          <button class="btn ghost" type="button" id="gcal-forget">Oublier</button>
+          <span class="flash" id="gcal-flash" role="status">Enregistré</span>
+        </div>
+      </form>
+      <h3 style="margin-top:12px">Où la page doit vivre</h3>
+      <p class="empty" style="padding:0">Google n&rsquo;autorise une connexion que depuis une adresse déclarée à l&rsquo;avance, et l&rsquo;aperçu dans Claude bloque les scripts extérieurs. Pour que le calendrier marche, cette page doit être hébergée à une adresse stable qui t&rsquo;appartient. Le plus simple et gratuit : GitHub Pages. Tout le reste de l&rsquo;app fonctionne sans cela.</p>
+
+      <h3 style="margin-top:12px">Comment l'obtenir</h3>
+      <ol class="steps">
+        <li>Héberge d&rsquo;abord cette page, puis reviens ici : l&rsquo;adresse affichée en bas est celle à déclarer.</li>
+        <li>Sur <code>console.cloud.google.com</code>, crée un projet.</li>
+        <li>Dans la bibliothèque d'API, active <strong>Google Calendar API</strong>.</li>
+        <li>Configure l'écran de consentement OAuth en type <strong>Externe</strong>, et ajoute ton adresse Gmail comme utilisateur de test.</li>
+        <li>Dans Identifiants, crée un <strong>ID client OAuth</strong> de type <strong>Application Web</strong>.</li>
+        <li>Dans <em>Origines JavaScript autorisées</em>, colle l'adresse affichée ci-dessous.</li>
+        <li>Copie l'identifiant client et colle-le dans le champ ci-dessus.</li>
+      </ol>
+      <p class="sub">Origine à autoriser : <code id="origin-value">—</code></p>
+    </section>
+  </div>
+
+  <div class="view" id="view-life" role="tabpanel" aria-labelledby="tab-life" hidden>
+    <header class="head"><h1>Life Center</h1></header>
+    <p class="empty">Objectifs, projets et habitudes au long cours viendront ici. Pas encore construit.</p>
+  </div>
+  <div class="view" id="view-finance" role="tabpanel" aria-labelledby="tab-finance" hidden>
+    <header class="head"><h1>Finance</h1></header>
+    <p class="empty">Budget et épargne viendront ici. Pas encore construit.</p>
+  </div>
+  <div class="view" id="view-sante" role="tabpanel" aria-labelledby="tab-sante" hidden>
+    <header class="head"><h1>Santé</h1></header>
+    <p class="empty">Séances de sport et suivi viendront ici. Pas encore construit.</p>
+  </div>
+  <div class="view" id="view-bureau" role="tabpanel" aria-labelledby="tab-bureau" hidden>
+    <header class="head"><h1>Bureau</h1></header>
+    <p class="empty">Les agents à qui tu délègues viendront ici. Pas encore construit.</p>
+  </div>
+
+</div>
+
+<svg class="vh" aria-hidden="true">
+  <symbol id="ck" viewBox="0 0 12 12"><path d="M2.5 6.4l2.3 2.3 4.7-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="x" viewBox="0 0 15 15"><path d="M3.5 3.5l8 8M11.5 3.5l-8 8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></symbol>
+</svg>
+
+<script>
+(function(){
+  "use strict";
+  var KEY = "app-perso-v1";
+  var $ = function(id){ return document.getElementById(id); };
+
+  // ---------- état ----------
+  var memoryOnly = false;
+  function load(){
+    try{ var r = localStorage.getItem(KEY); if(r) return JSON.parse(r); }
+    catch(e){ memoryOnly = true; }
+    return null;
+  }
+  function save(){
+    if (memoryOnly) return;
+    try{ localStorage.setItem(KEY, JSON.stringify(state)); }
+    catch(e){ memoryOnly = true; }
+  }
+
+  var state = load() || {
+    tasks: [
+      { id:"t1", title:"Envoyer le compte rendu du BDE", due:"Aujourd'hui", done:false },
+      { id:"t2", title:"Réviser le chapitre 4 de droit", due:"Demain", done:false }
+    ],
+    habits: [
+      { id:"sport", name:"Sport", dates:[] },
+      { id:"lecture", name:"Lecture", dates:[] },
+      { id:"eau", name:"Eau", dates:[] },
+      { id:"revisions", name:"Révisions", dates:[] }
+    ],
+    notes: [],
+    googleClientId: ""
+  };
+  if (!state.habits) state.habits = [];
+  if (!state.tasks) state.tasks = [];
+  if (!state.notes) state.notes = [];
+
+  // ---------- dates ----------
+  function iso(d){
+    return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
+  }
+  function shift(days){ var d = new Date(); d.setDate(d.getDate()+days); return iso(d); }
+  function hhmm(d){ return String(d.getHours()).padStart(2,"0") + ":" + String(d.getMinutes()).padStart(2,"0"); }
+
+  function svg(paths, size){
+    var s = size || 15;
+    return '<svg aria-hidden="true" width="'+s+'" height="'+s+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">'+paths+'</svg>';
+  }
+  function el(tag, cls, text){
+    var n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text != null) n.textContent = text;
+    return n;
+  }
+  function killBtn(label, onClick){
+    var b = el("button","kill");
+    b.type = "button";
+    b.setAttribute("aria-label", label);
+    b.innerHTML = '<svg width="15" height="15" aria-hidden="true"><use href="#x"/></svg>';
+    b.addEventListener("click", onClick);
+    return b;
+  }
+  function flash(node){
+    node.classList.add("show");
+    setTimeout(function(){ node.classList.remove("show"); }, 1600);
+  }
+
+  // ---------- date + citation ----------
+  var QUOTES = [
+    ["Chaque jour est une vie en miniature.", "Sénèque"],
+    ["La vie est longue si l'on sait s'en servir.", "Sénèque"],
+    ["Tu as pouvoir sur ton esprit, non sur les événements.", "Marc Aurèle"],
+    ["Celui qui déplace une montagne commence par de petites pierres.", "Confucius"],
+    ["Ce ne sont pas les choses qui troublent les hommes, mais leurs opinions.", "Épictète"],
+    ["Rien n'empêche tant d'être naturel que l'envie de le paraître.", "La Rochefoucauld"],
+    ["On ne va jamais si loin que lorsqu'on ne sait pas où l'on va.", "Cromwell"],
+    ["Le temps découvre la vérité.", "Sénèque"]
+  ];
+  function dayOfYear(d){
+    var start = new Date(d.getFullYear(), 0, 0);
+    return Math.floor((d - start) / 86400000);
+  }
+  function renderDay(){
+    var now = new Date();
+    var dl = now.toLocaleDateString("fr-FR", { weekday:"long", day:"numeric", month:"long" });
+    $("dateline").textContent = dl.charAt(0).toUpperCase() + dl.slice(1);
+    var q = QUOTES[dayOfYear(now) % QUOTES.length];
+    $("quote-text").textContent = q[0];
+    $("quote-author").textContent = q[1];
+  }
+
+  // ---------- météo ----------
+  var WX = {
+    0:["Ciel dégagé","sun"], 1:["Plutôt dégagé","sun"], 2:["Partiellement nuageux","cloud"], 3:["Couvert","cloud"],
+    45:["Brouillard","fog"], 48:["Brouillard givrant","fog"],
+    51:["Bruine légère","rain"], 53:["Bruine","rain"], 55:["Bruine dense","rain"],
+    56:["Bruine verglaçante","rain"], 57:["Bruine verglaçante","rain"],
+    61:["Pluie faible","rain"], 63:["Pluie","rain"], 65:["Forte pluie","rain"],
+    66:["Pluie verglaçante","rain"], 67:["Pluie verglaçante","rain"],
+    71:["Neige faible","snow"], 73:["Neige","snow"], 75:["Forte neige","snow"], 77:["Grains de neige","snow"],
+    80:["Averses","rain"], 81:["Averses","rain"], 82:["Fortes averses","rain"],
+    85:["Averses de neige","snow"], 86:["Averses de neige","snow"],
+    95:["Orage","storm"], 96:["Orage et grêle","storm"], 99:["Orage et grêle","storm"]
+  };
+  var WX_ICON = {
+    sun: '<circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M18.7 5.3l-1.6 1.6M6.9 17.1l-1.6 1.6"/>',
+    cloud: '<path d="M7 18h10a4 4 0 0 0 .5-7.97A6 6 0 0 0 6 9.5 4.25 4.25 0 0 0 7 18z"/>',
+    rain: '<path d="M7 15h10a4 4 0 0 0 .5-7.97A6 6 0 0 0 6 6.5 4.25 4.25 0 0 0 7 15z"/><path d="M9 18.5l-.8 2M13 18.5l-.8 2M17 18.5l-.8 2"/>',
+    snow: '<path d="M7 15h10a4 4 0 0 0 .5-7.97A6 6 0 0 0 6 6.5 4.25 4.25 0 0 0 7 15z"/><path d="M9 19h.01M13 19h.01M17 19h.01M11 21h.01M15 21h.01"/>',
+    fog: '<path d="M7 13h10a4 4 0 0 0 .5-7.97A6 6 0 0 0 6 4.5 4.25 4.25 0 0 0 7 13z"/><path d="M4 17h16M6 20.5h12"/>',
+    storm: '<path d="M7 14h10a4 4 0 0 0 .5-7.97A6 6 0 0 0 6 5.5 4.25 4.25 0 0 0 7 14z"/><path d="M13 15l-3 4h3l-1.5 3.5"/>'
+  };
+  function loadWeather(){
+    var url = "https://api.open-meteo.com/v1/forecast?latitude=43.7102&longitude=7.2620"
+            + "&current=temperature_2m,weather_code&timezone=Europe%2FParis";
+    fetch(url).then(function(r){
+      if (!r.ok) throw new Error("meteo");
+      return r.json();
+    }).then(function(d){
+      var c = d && d.current;
+      if (!c || typeof c.temperature_2m !== "number") throw new Error("meteo");
+      var info = WX[c.weather_code] || ["Nice","cloud"];
+      $("wx-temp").textContent = Math.round(c.temperature_2m) + "°";
+      $("wx-desc").textContent = "Nice, " + info[0].toLowerCase();
+      $("wx-icon").innerHTML = '<svg aria-hidden="true" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">' + (WX_ICON[info[1]] || WX_ICON.cloud) + '</svg>';
+      $("wx").hidden = false;
+    }).catch(function(){
+      $("wx-icon").textContent = "";
+      $("wx-temp").textContent = "";
+      $("wx-desc").textContent = "M\u00e9t\u00e9o indisponible ici";
+      $("wx").hidden = false;
+    });
+  }
+
+  // ---------- onglets ----------
+  var tabs = Array.prototype.slice.call(document.querySelectorAll('[role="tab"]'));
+  function show(tab){
+    tabs.forEach(function(t){
+      var on = t === tab;
+      t.setAttribute("aria-selected", on ? "true" : "false");
+      var v = $(t.getAttribute("aria-controls"));
+      if (v) v.hidden = !on;
+    });
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+  tabs.forEach(function(t){ t.addEventListener("click", function(){ show(t); }); });
+
+  // ---------- tâches ----------
+  function renderTasks(){
+    var ul = $("task-list");
+    ul.textContent = "";
+    state.tasks.forEach(function(t){
+      var li = document.createElement("li");
+      var b = el("button","tkbtn");
+      b.type = "button";
+      b.setAttribute("aria-pressed", t.done ? "true" : "false");
+
+      var box = el("span","box");
+      box.setAttribute("aria-hidden","true");
+      box.innerHTML = '<svg width="12" height="12" style="color:var(--bg)"><use href="#ck"/></svg>';
+
+      var wrap = el("span");
+      wrap.style.cssText = "display:flex; flex-direction:column; gap:3px; min-width:0";
+      wrap.appendChild(el("span","tklab", t.title));
+      if (t.due) wrap.appendChild(el("span","tkdue", t.due));
+
+      b.appendChild(box); b.appendChild(wrap);
+      b.addEventListener("click", function(){ t.done = !t.done; save(); renderTasks(); });
+
+      li.appendChild(b);
+      li.appendChild(killBtn("Supprimer la tâche " + t.title, function(){
+        state.tasks = state.tasks.filter(function(x){ return x.id !== t.id; });
+        save(); renderTasks();
+      }));
+      ul.appendChild(li);
+    });
+    var n = state.tasks.filter(function(t){ return !t.done; }).length;
+    $("task-count").textContent = state.tasks.length === 0 ? "Liste vide"
+      : n === 0 ? "Tout est fait" : n === 1 ? "1 restante" : n + " restantes";
+  }
+
+  // ---------- habitudes ----------
+  function streakOf(dates){
+    var n = 0;
+    for (var k = 0; k < 400; k++){
+      if (dates.indexOf(shift(-k)) === -1) break;
+      n++;
+    }
+    return n;
+  }
+  function renderHabits(){
+    var g = $("habit-grid");
+    g.textContent = "";
+    var today = iso(new Date());
+    state.habits.forEach(function(h){
+      if (!h.dates) h.dates = [];
+      var done = h.dates.indexOf(today) !== -1;
+      var s = streakOf(h.dates);
+
+      var b = el("button","habit");
+      b.type = "button";
+      b.setAttribute("aria-pressed", done ? "true" : "false");
+
+      var top = el("span","top");
+      top.appendChild(el("span","nm", h.name));
+      var mk = el("span","mark");
+      mk.setAttribute("aria-hidden","true");
+      mk.innerHTML = '<svg width="12" height="12" style="color:var(--bg)"><use href="#ck"/></svg>';
+      top.appendChild(mk);
+
+      var big = el("span","big");
+      big.appendChild(el("span","n", String(s)));
+      big.appendChild(el("span","sub", s === 1 ? "jour de suite" : "jours de suite"));
+
+      var wk = el("span","week");
+      wk.setAttribute("aria-hidden","true");
+      for (var k = 6; k >= 0; k--){
+        var d = el("span");
+        var on = h.dates.indexOf(shift(-k)) !== -1;
+        d.className = (on ? "on" : "") + (k === 0 ? " today" : "");
+        wk.appendChild(d);
+      }
+
+      b.appendChild(top); b.appendChild(big); b.appendChild(wk);
+      b.addEventListener("click", function(){
+        if (h.dates.indexOf(today) !== -1) h.dates = h.dates.filter(function(x){ return x !== today; });
+        else h.dates.push(today);
+        save(); renderHabits();
+      });
+      g.appendChild(b);
+    });
+    var c = state.habits.filter(function(h){ return h.dates.indexOf(today) !== -1; }).length;
+    $("habit-count").textContent = c + " sur " + state.habits.length + " aujourd'hui";
+  }
+
+  // ---------- notes ----------
+  function renderNotes(){
+    var ul = $("note-list");
+    ul.textContent = "";
+    state.notes.slice().reverse().forEach(function(n){
+      var li = document.createElement("li");
+      var box = el("span");
+      box.style.cssText = "flex:1 1 auto; min-width:0; display:flex; flex-direction:column";
+      box.appendChild(el("span","txt", n.text));
+      box.appendChild(el("span","when", new Date(n.at).toLocaleDateString("fr-FR", { day:"numeric", month:"short" })));
+      li.appendChild(box);
+      li.appendChild(killBtn("Supprimer la note", function(){
+        state.notes = state.notes.filter(function(x){ return x.id !== n.id; });
+        save(); renderNotes();
+      }));
+      ul.appendChild(li);
+    });
+    var empty = state.notes.length === 0;
+    $("note-empty").hidden = !empty;
+    $("note-list").hidden = empty;
+    $("note-count").textContent = empty ? "Vide"
+      : state.notes.length === 1 ? "1 note" : state.notes.length + " notes";
+  }
+
+  // ---------- calendrier Google ----------
+  var accessToken = null;
+  var tokenClient = null;
+  var SCOPE = "https://www.googleapis.com/auth/calendar.readonly";
+
+  function agendaState(message, actionLabel, onAction){
+    var body = $("agenda-body");
+    body.textContent = "";
+    var box = el("div","state");
+    box.appendChild(el("span", null, message));
+    if (actionLabel){
+      var b = el("button","btn", actionLabel);
+      b.type = "button";
+      b.addEventListener("click", onAction);
+      box.appendChild(b);
+    }
+    body.appendChild(box);
+  }
+
+  var gsiLoading = false;
+  function loadGsi(then){
+    if (window.google && google.accounts && google.accounts.oauth2){ then(true); return; }
+    if (gsiLoading) return;
+    gsiLoading = true;
+    agendaState("Chargement de la bibliothèque Google\u2026");
+    var s = document.createElement("script");
+    s.src = "https://accounts.google.com/gsi/client";
+    s.async = true;
+    s.onload = function(){ gsiLoading = false; then(!!(window.google && google.accounts && google.accounts.oauth2)); };
+    s.onerror = function(){ gsiLoading = false; then(false); };
+    document.head.appendChild(s);
+  }
+
+  function connectCalendar(){
+    if (!state.googleClientId){ show($("tab-reglages")); return; }
+    loadGsi(function(ok){
+      if (!ok){
+        agendaState("La biblioth\u00e8que Google n\u2019a pas pu \u00eatre charg\u00e9e ici. La page doit \u00eatre h\u00e9berg\u00e9e \u00e0 son adresse \u00e0 elle pour que Google accepte de s\u2019y connecter.", "Voir comment", function(){ show($("tab-reglages")); });
+        return;
+      }
+      startTokenFlow();
+    });
+  }
+
+  function startTokenFlow(){
+    try{
+      if (!tokenClient){
+        tokenClient = google.accounts.oauth2.initTokenClient({
+          client_id: state.googleClientId,
+          scope: SCOPE,
+          callback: function(resp){
+            if (resp && resp.access_token){ accessToken = resp.access_token; loadEvents(); }
+            else { agendaState("La connexion a été refusée ou annulée.", "Réessayer", connectCalendar); }
+          },
+          error_callback: function(){
+            agendaState("La connexion n'a pas abouti. Vérifie l'identifiant client et l'origine autorisée dans Google Cloud.", "Ouvrir les réglages", function(){ show($("tab-reglages")); });
+          }
+        });
+      }
+      agendaState("Connexion en cours…");
+      tokenClient.requestAccessToken();
+    } catch(e){
+      agendaState("L'identifiant client semble invalide.", "Ouvrir les réglages", function(){ show($("tab-reglages")); });
+    }
+  }
+
+  function loadEvents(){
+    if (!accessToken){ renderAgendaEntry(); return; }
+    var s = new Date(); s.setHours(0,0,0,0);
+    var e = new Date(s); e.setDate(e.getDate()+1);
+    var url = "https://www.googleapis.com/calendar/v3/calendars/primary/events"
+            + "?timeMin=" + encodeURIComponent(s.toISOString())
+            + "&timeMax=" + encodeURIComponent(e.toISOString())
+            + "&singleEvents=true&orderBy=startTime&maxResults=50";
+    agendaState("Chargement de l'agenda…");
+    fetch(url, { headers: { Authorization: "Bearer " + accessToken } })
+      .then(function(r){
+        if (r.status === 401 || r.status === 403){ accessToken = null; throw new Error("auth"); }
+        if (!r.ok) throw new Error("http");
+        return r.json();
+      })
+      .then(function(d){ renderAgenda((d && d.items) || []); })
+      .catch(function(err){
+        if (err.message === "auth"){
+          agendaState("La session Google a expiré.", "Se reconnecter", connectCalendar);
+        } else {
+          agendaState("L'agenda n'a pas pu être chargé.", "Réessayer", loadEvents);
+        }
+      });
+  }
+
+  function renderAgenda(items){
+    var body = $("agenda-body");
+    body.textContent = "";
+    $("agenda-note").textContent = "";
+
+    if (items.length === 0){
+      body.appendChild(el("p","empty","Rien au programme aujourd'hui."));
+      return;
+    }
+
+    var now = new Date();
+    var evts = items.map(function(it){
+      var allDay = !!(it.start && it.start.date);
+      var start = allDay ? null : new Date(it.start.dateTime);
+      var end = allDay ? null : new Date(it.end && it.end.dateTime ? it.end.dateTime : it.start.dateTime);
+      return {
+        title: it.summary || "Sans titre",
+        where: it.location || "",
+        allDay: allDay, start: start, end: end
+      };
+    });
+    evts.sort(function(a,b){
+      if (a.allDay !== b.allDay) return a.allDay ? -1 : 1;
+      if (a.allDay) return 0;
+      return a.start - b.start;
+    });
+
+    var ol = el("ol","ev");
+    evts.forEach(function(ev){
+      var li = document.createElement("li");
+      var isNow = !ev.allDay && ev.start <= now && now < ev.end;
+      var isPast = !ev.allDay && ev.end <= now;
+      if (isNow) li.className = "now";
+      else if (isPast) li.className = "past";
+
+      if (ev.allDay){
+        var ad = el("span","allday","Journée");
+        li.appendChild(ad);
+      } else {
+        var t = document.createElement("time");
+        t.className = "";
+        t.dateTime = hhmm(ev.start);
+        if (isNow){
+          var pin = el("span","pin");
+          pin.setAttribute("aria-hidden","true");
+          t.appendChild(pin);
+        }
+        t.appendChild(document.createTextNode(hhmm(ev.start)));
+        li.appendChild(t);
+      }
+
+      var what = el("span","what");
+      what.appendChild(el("span","ttl", ev.title));
+      var bits = [];
+      if (ev.where) bits.push(ev.where);
+      if (!ev.allDay && ev.end) bits.push("jusqu'à " + hhmm(ev.end));
+      if (bits.length) what.appendChild(el("span","sub", bits.join(", ")));
+      li.appendChild(what);
+      ol.appendChild(li);
+    });
+    body.appendChild(ol);
+  }
+
+  function renderAgendaEntry(){
+    if (!state.googleClientId){
+      $("agenda-note").textContent = "Non connecté";
+      agendaState("Ton agenda n'est pas encore branché. Il te faut un identifiant client Google, à créer une fois.",
+        "Ouvrir les réglages", function(){ show($("tab-reglages")); });
+      return;
+    }
+    $("agenda-note").textContent = "";
+    agendaState("Connecte ton calendrier Google pour voir tes évènements du jour.", "Connecter Google Calendar", connectCalendar);
+  }
+
+  // ---------- réglages ----------
+  function initSettings(){
+    $("gcal-id").value = state.googleClientId || "";
+    var origin = "";
+    try{ origin = window.location.origin; }catch(e){}
+    $("origin-value").textContent = origin || "l'adresse de cette page";
+
+    $("gcal-form").addEventListener("submit", function(e){
+      e.preventDefault();
+      state.googleClientId = $("gcal-id").value.trim();
+      tokenClient = null;
+      accessToken = null;
+      save();
+      flash($("gcal-flash"));
+      renderAgendaEntry();
+    });
+    $("gcal-forget").addEventListener("click", function(){
+      state.googleClientId = "";
+      $("gcal-id").value = "";
+      tokenClient = null;
+      accessToken = null;
+      save();
+      renderAgendaEntry();
+    });
+  }
+
+  // ---------- branchements ----------
+  $("go-notes").addEventListener("click", function(){ show($("tab-notes")); });
+
+  $("task-form").addEventListener("submit", function(e){
+    e.preventDefault();
+    var i = $("task-new");
+    var v = i.value.trim();
+    if (!v) return;
+    state.tasks.push({ id:"t"+Date.now(), title:v, due:"", done:false });
+    i.value = "";
+    save(); renderTasks();
+  });
+
+  $("note-save").addEventListener("click", function(){
+    var ta = $("note-input");
+    var v = ta.value.trim();
+    if (!v){ ta.focus(); return; }
+    state.notes.push({ id:"n"+Date.now(), text:v, at:Date.now() });
+    ta.value = "";
+    save(); renderNotes();
+    flash($("note-flash"));
+  });
+
+  renderDay();
+  renderTasks();
+  renderHabits();
+  renderNotes();
+  initSettings();
+  renderAgendaEntry();
+  loadWeather();
+})();
+
+</script>
+</body>
+</html>
