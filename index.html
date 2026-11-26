@@ -620,11 +620,11 @@ textarea{width:100%; resize:vertical; background:var(--raised); border:1px solid
   }
 
   var gsiLoading = false;
-  function loadGsi(then){
+  function loadGsi(then, quiet){
     if (window.google && google.accounts && google.accounts.oauth2){ then(true); return; }
     if (gsiLoading) return;
     gsiLoading = true;
-    agendaState("Chargement de la bibliothèque Google\u2026");
+    if (!quiet) agendaState("Chargement de la bibliothèque Google\u2026");
     var s = document.createElement("script");
     s.src = "https://accounts.google.com/gsi/client";
     s.async = true;
@@ -633,8 +633,10 @@ textarea{width:100%; resize:vertical; background:var(--raised); border:1px solid
     document.head.appendChild(s);
   }
 
+  var autoMode = false, requesting = false, tokenExpiry = 0;
   function connectCalendar(){
     if (!state.googleClientId){ show($("tab-reglages")); return; }
+    if (requesting) return;
     loadGsi(function(ok){
       if (!ok){
         agendaState("La biblioth\u00e8que Google n\u2019a pas pu \u00eatre charg\u00e9e ici. La page doit \u00eatre h\u00e9berg\u00e9e \u00e0 son adresse \u00e0 elle pour que Google accepte de s\u2019y connecter.", "Voir comment", function(){ show($("tab-reglages")); });
@@ -651,16 +653,28 @@ textarea{width:100%; resize:vertical; background:var(--raised); border:1px solid
           client_id: state.googleClientId,
           scope: SCOPE,
           callback: function(resp){
-            if (resp && resp.access_token){ accessToken = resp.access_token; loadEvents(); loadCalMonth(); }
+            requesting = false;
+            if (resp && resp.access_token){
+              accessToken = resp.access_token;
+              tokenExpiry = Date.now() + Math.max(60, (+resp.expires_in || 3600) - 120) * 1000;
+              if (!state.calLinked){ state.calLinked = true; save(); }
+              autoMode = false;
+              loadEvents(); loadCalMonth();
+            }
+            else if (autoMode){ autoMode = false; renderAgendaEntry(); }
             else { agendaState("La connexion a été refusée ou annulée.", "Réessayer", connectCalendar); }
           },
           error_callback: function(){
+            requesting = false;
+            if (autoMode){ autoMode = false; renderAgendaEntry(); return; }
             agendaState("La connexion n'a pas abouti. Vérifie l'identifiant client et l'origine autorisée dans Google Cloud.", "Ouvrir les réglages", function(){ show($("tab-reglages")); });
           }
         });
       }
-      agendaState("Connexion en cours…");
-      tokenClient.requestAccessToken();
+      if (!autoMode) agendaState("Connexion en cours…");
+      requesting = true;
+      setTimeout(function(){ requesting = false; }, 20000);
+      tokenClient.requestAccessToken(state.calHint ? { hint: state.calHint } : {});
     } catch(e){
       agendaState("L'identifiant client semble invalide.", "Ouvrir les réglages", function(){ show($("tab-reglages")); });
     }
@@ -680,7 +694,11 @@ textarea{width:100%; resize:vertical; background:var(--raised); border:1px solid
           + "&singleEvents=true&orderBy=startTime&maxResults=" + (maxResults || 50);
     return gfetch("https://www.googleapis.com/calendar/v3/users/me/calendarList?minAccessRole=reader")
       .then(function(cl){
-        var cals = ((cl && cl.items) || []).filter(function(c){ return c.selected !== false; }).slice(0, 12);
+        var allCals = (cl && cl.items) || [];
+        allCals.forEach(function(c){
+          if (c.primary && c.id && state.calHint !== c.id){ state.calHint = c.id; save(); }
+        });
+        var cals = allCals.filter(function(c){ return c.selected !== false; }).slice(0, 12);
         if (cals.length === 0) cals = [{ id: "primary", summary: "" }];
         return Promise.all(cals.map(function(c){
           return gfetch("https://www.googleapis.com/calendar/v3/calendars/" + encodeURIComponent(c.id) + "/events" + q)
@@ -965,6 +983,7 @@ textarea{width:100%; resize:vertical; background:var(--raised); border:1px solid
     });
     $("gcal-forget").addEventListener("click", function(){
       state.googleClientId = "";
+      state.calLinked = false; state.calHint = "";
       $("gcal-id").value = "";
       tokenClient = null;
       accessToken = null;
@@ -972,6 +991,20 @@ textarea{width:100%; resize:vertical; background:var(--raised); border:1px solid
       renderAgendaEntry();
     });
   }
+
+  // ---------- reconnexion automatique ----------
+  // Google ne donne qu'une heure d'accès sans serveur : au premier geste après expiration,
+  // on redemande un accès en silence (le compte a déjà donné son accord).
+  function autoReconnect(){
+    if (!state.calLinked || !state.googleClientId || requesting) return;
+    if (accessToken && Date.now() < tokenExpiry) return;
+    accessToken = null;
+    autoMode = true;
+    connectCalendar();
+  }
+  document.addEventListener("click", autoReconnect, true);
+  document.addEventListener("keydown", autoReconnect, true);
+  if (state.calLinked && state.googleClientId) loadGsi(function(){}, true);
 
   // ---------- branchements ----------
   $("cal-prev").addEventListener("click", function(){ calGo(-1); });
