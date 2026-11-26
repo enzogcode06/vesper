@@ -254,6 +254,7 @@ dialog::backdrop{background:rgba(8,9,10,.5)}
           <span class="sub" id="task-count"></span>
         </div>
         <ul class="tk" id="task-list"></ul>
+        <p class="sub" id="task-hint" hidden>Les tâches cochées disparaissent à minuit.</p>
         <form class="adder" id="task-form">
           <label class="vh" for="task-new">Nouvelle tâche</label>
           <input id="task-new" placeholder="Ajouter une tâche" autocomplete="off">
@@ -753,6 +754,18 @@ dialog::backdrop{background:rgba(8,9,10,.5)}
   tabs.forEach(function(t){ t.addEventListener("click", function(){ show(t); }); });
 
   // ---------- tâches ----------
+  // Les tâches cochées un jour précédent sont supprimées automatiquement.
+  function sweepDone(){
+    var today = iso(new Date()), changed = false;
+    state.tasks.forEach(function(t){
+      if (t.done && !t.doneDay){ t.doneDay = today; changed = true; }
+    });
+    var kept = state.tasks.filter(function(t){ return !(t.done && t.doneDay < today); });
+    if (kept.length !== state.tasks.length){ state.tasks = kept; changed = true; }
+    if (changed) save();
+    return changed;
+  }
+
   function renderTasks(){
     var ul = $("task-list");
     ul.textContent = "";
@@ -772,7 +785,11 @@ dialog::backdrop{background:rgba(8,9,10,.5)}
       if (t.due) wrap.appendChild(el("span","tkdue", t.due));
 
       b.appendChild(box); b.appendChild(wrap);
-      b.addEventListener("click", function(){ t.done = !t.done; save(); renderTasks(); });
+      b.addEventListener("click", function(){
+        t.done = !t.done;
+        if (t.done) t.doneDay = iso(new Date()); else delete t.doneDay;
+        save(); renderTasks();
+      });
 
       li.appendChild(b);
       li.appendChild(killBtn("Supprimer la tâche " + t.title, function(){
@@ -781,6 +798,7 @@ dialog::backdrop{background:rgba(8,9,10,.5)}
       }));
       ul.appendChild(li);
     });
+    $("task-hint").hidden = !state.tasks.some(function(t){ return t.done; });
     var n = state.tasks.filter(function(t){ return !t.done; }).length;
     $("task-count").textContent = state.tasks.length === 0 ? "Liste vide"
       : n === 0 ? "Tout est fait" : n === 1 ? "1 restante" : n + " restantes";
@@ -1321,7 +1339,14 @@ dialog::backdrop{background:rgba(8,9,10,.5)}
 
   calToday();
   renderDay();
+  sweepDone();
   renderTasks();
+  function sweepAndRefresh(){
+    if (sweepDone()) renderTasks();
+    renderDay();
+  }
+  setInterval(sweepAndRefresh, 60000);
+  document.addEventListener("visibilitychange", function(){ if (!document.hidden) sweepAndRefresh(); });
   renderHabits();
   renderNotes();
   initSettings();
