@@ -132,6 +132,33 @@ textarea{width:100%; resize:vertical; background:var(--raised); border:1px solid
 .form input{min-height:48px; background:var(--raised); border:1px solid var(--line); border-radius:12px; padding:0 14px; width:100%}
 .steps{margin:0; padding-left:22px; display:flex; flex-direction:column; gap:10px; font-size:15px; line-height:1.6; max-width:64ch}
 .steps code{background:var(--raised); border:1px solid var(--line); border-radius:6px; padding:1px 6px; font-size:13px; overflow-wrap:anywhere}
+.calhead{display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:18px}
+.calnav{display:flex; align-items:center; gap:8px}
+.iconbtn{width:46px; height:46px; border-radius:50%; border:1px solid var(--line); background:var(--panel); display:flex; align-items:center; justify-content:center}
+.iconbtn:hover{border-color:var(--line-strong)}
+.calwrap{display:flex; flex-wrap:wrap; gap:32px 40px; align-items:flex-start}
+.calpanel{flex:3 1 540px; min-width:0; padding:clamp(10px,2vw,22px); overflow:hidden}
+.dow,.cells{display:grid; grid-template-columns:repeat(7,minmax(0,1fr))}
+.dow span{font-size:13px; font-weight:500; color:var(--muted); padding:4px 8px 10px}
+.cells{border-top:1px solid var(--line)}
+.cell{min-height:96px; padding:7px 7px 8px; text-align:left; background:none; border:0; border-right:1px solid var(--line); border-bottom:1px solid var(--line); display:flex; flex-direction:column; align-items:stretch; gap:4px; min-width:0}
+.cell:nth-child(7n){border-right:0}
+.cell:hover{background:var(--raised)}
+.cell[aria-pressed="true"]{background:var(--raised); box-shadow:inset 0 0 0 1.5px var(--accent)}
+.dn{font-size:15px; font-weight:500; font-variant-numeric:tabular-nums; width:28px; height:28px; display:flex; align-items:center; justify-content:center; border-radius:50%}
+.cell.out .dn{color:var(--muted); opacity:.6}
+.cell.today .dn{background:var(--accent); color:var(--bg); font-weight:600}
+.chip{font-size:12px; line-height:1.35; padding:2px 6px; border-radius:6px; background:var(--raised); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.cell[aria-pressed="true"] .chip,.cell:hover .chip{background:var(--panel)}
+.more{font-size:12px; color:var(--muted); padding-left:2px}
+.dots{display:none; gap:4px; justify-content:center}
+.dots i{width:6px; height:6px; border-radius:50%; background:var(--accent)}
+.dayside{flex:2 1 300px; min-width:0; padding:26px clamp(18px,3vw,30px) 20px; display:flex; flex-direction:column; gap:12px}
+@media (max-width:640px){
+  .chip,.more{display:none}
+  .dots{display:flex}
+  .cell{min-height:58px; padding:6px 2px; align-items:center}
+}
 </style>
 </head>
 <body>
@@ -140,6 +167,7 @@ textarea{width:100%; resize:vertical; background:var(--raised); border:1px solid
   <div class="topbar">
     <nav role="tablist" aria-label="Onglets">
       <button class="tab" role="tab" id="tab-today" aria-controls="view-today" aria-selected="true">Aujourd'hui</button>
+      <button class="tab" role="tab" id="tab-calendrier" aria-controls="view-calendrier" aria-selected="false">Calendrier</button>
       <button class="tab" role="tab" id="tab-life" aria-controls="view-life" aria-selected="false">Life Center</button>
       <button class="tab" role="tab" id="tab-notes" aria-controls="view-notes" aria-selected="false">Notes</button>
       <button class="tab" role="tab" id="tab-finance" aria-controls="view-finance" aria-selected="false">Finance</button>
@@ -218,6 +246,29 @@ textarea{width:100%; resize:vertical; background:var(--raised); border:1px solid
         </div>
       </div>
     </section>
+  </div>
+
+  <!-- CALENDRIER -->
+  <div class="view" id="view-calendrier" role="tabpanel" aria-labelledby="tab-calendrier" hidden>
+    <header class="calhead">
+      <h1 id="cal-title">—</h1>
+      <div class="calnav">
+        <button class="btn ghost" id="cal-today" type="button">Aujourd'hui</button>
+        <button class="iconbtn" id="cal-prev" type="button" aria-label="Mois précédent"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></button>
+        <button class="iconbtn" id="cal-next" type="button" aria-label="Mois suivant"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></button>
+      </div>
+    </header>
+    <div id="cal-state" role="status"></div>
+    <div class="calwrap">
+      <section class="panel calpanel" aria-label="Grille du mois">
+        <div class="dow" aria-hidden="true"><span>Lun</span><span>Mar</span><span>Mer</span><span>Jeu</span><span>Ven</span><span>Sam</span><span>Dim</span></div>
+        <div class="cells" id="cal-cells"></div>
+      </section>
+      <section class="panel dayside" aria-labelledby="cal-day-h">
+        <h2 id="cal-day-h">—</h2>
+        <div id="cal-day-body"></div>
+      </section>
+    </div>
   </div>
 
   <!-- NOTES -->
@@ -433,6 +484,7 @@ textarea{width:100%; resize:vertical; background:var(--raised); border:1px solid
       if (v) v.hidden = !on;
     });
     window.scrollTo({ top: 0, behavior: "smooth" });
+    if (tab && tab.id === "tab-calendrier") loadCalMonth();
   }
   tabs.forEach(function(t){ t.addEventListener("click", function(){ show(t); }); });
 
@@ -599,7 +651,7 @@ textarea{width:100%; resize:vertical; background:var(--raised); border:1px solid
           client_id: state.googleClientId,
           scope: SCOPE,
           callback: function(resp){
-            if (resp && resp.access_token){ accessToken = resp.access_token; loadEvents(); }
+            if (resp && resp.access_token){ accessToken = resp.access_token; loadEvents(); loadCalMonth(); }
             else { agendaState("La connexion a été refusée ou annulée.", "Réessayer", connectCalendar); }
           },
           error_callback: function(){
@@ -614,58 +666,80 @@ textarea{width:100%; resize:vertical; background:var(--raised); border:1px solid
     }
   }
 
-  function loadEvents(){
-    if (!accessToken){ renderAgendaEntry(); return; }
-    var s = new Date(); s.setHours(0,0,0,0);
-    var e = new Date(s); e.setDate(e.getDate()+1);
-    var url = "https://www.googleapis.com/calendar/v3/calendars/primary/events"
-            + "?timeMin=" + encodeURIComponent(s.toISOString())
-            + "&timeMax=" + encodeURIComponent(e.toISOString())
-            + "&singleEvents=true&orderBy=startTime&maxResults=50";
-    agendaState("Chargement de l'agenda…");
-    fetch(url, { headers: { Authorization: "Bearer " + accessToken } })
-      .then(function(r){
-        if (r.status === 401 || r.status === 403){ accessToken = null; throw new Error("auth"); }
-        if (!r.ok) throw new Error("http");
-        return r.json();
+  function gfetch(url){
+    return fetch(url, { headers: { Authorization: "Bearer " + accessToken } }).then(function(r){
+      if (r.status === 401 || r.status === 403){ accessToken = null; throw new Error("auth"); }
+      if (!r.ok) throw new Error("http");
+      return r.json();
+    });
+  }
+
+  function fetchRange(s, e, maxResults){
+    var q = "?timeMin=" + encodeURIComponent(s.toISOString())
+          + "&timeMax=" + encodeURIComponent(e.toISOString())
+          + "&singleEvents=true&orderBy=startTime&maxResults=" + (maxResults || 50);
+    return gfetch("https://www.googleapis.com/calendar/v3/users/me/calendarList?minAccessRole=reader")
+      .then(function(cl){
+        var cals = ((cl && cl.items) || []).filter(function(c){ return c.selected !== false; }).slice(0, 12);
+        if (cals.length === 0) cals = [{ id: "primary", summary: "" }];
+        return Promise.all(cals.map(function(c){
+          return gfetch("https://www.googleapis.com/calendar/v3/calendars/" + encodeURIComponent(c.id) + "/events" + q)
+            .then(function(d){
+              return ((d && d.items) || []).map(function(it){ it._cal = c.summaryOverride || c.summary || ""; return it; });
+            })
+            .catch(function(err){ if (err.message === "auth") throw err; return []; });
+        }));
       })
-      .then(function(d){ renderAgenda((d && d.items) || []); })
-      .catch(function(err){
-        if (err.message === "auth"){
-          agendaState("La session Google a expiré.", "Se reconnecter", connectCalendar);
-        } else {
-          agendaState("L'agenda n'a pas pu être chargé.", "Réessayer", loadEvents);
-        }
+      .then(function(lists){
+        var all = [].concat.apply([], lists).filter(function(it){ return it.status !== "cancelled"; });
+        var seen = {};
+        return all.filter(function(it){
+          var k = (it.iCalUID || it.id) + "|" + ((it.start && (it.start.dateTime || it.start.date)) || "");
+          if (seen[k]) return false;
+          seen[k] = true; return true;
+        });
       });
   }
 
-  function renderAgenda(items){
-    var body = $("agenda-body");
-    body.textContent = "";
-    $("agenda-note").textContent = "";
-
-    if (items.length === 0){
-      body.appendChild(el("p","empty","Rien au programme aujourd'hui."));
-      return;
-    }
-
-    var now = new Date();
-    var evts = items.map(function(it){
-      var allDay = !!(it.start && it.start.date);
-      var start = allDay ? null : new Date(it.start.dateTime);
-      var end = allDay ? null : new Date(it.end && it.end.dateTime ? it.end.dateTime : it.start.dateTime);
-      return {
-        title: it.summary || "Sans titre",
-        where: it.location || "",
-        allDay: allDay, start: start, end: end
-      };
-    });
+  function normEvent(it){
+    var allDay = !!(it.start && it.start.date);
+    var start = allDay ? null : new Date(it.start.dateTime);
+    var end = allDay ? null : new Date(it.end && it.end.dateTime ? it.end.dateTime : it.start.dateTime);
+    return {
+      title: it.summary || "Sans titre",
+      where: it.location || "",
+      allDay: allDay, start: start, end: end,
+      from: allDay ? new Date(it.start.date + "T00:00:00") : start,
+      to: allDay ? new Date((it.end && it.end.date ? it.end.date : it.start.date) + "T00:00:00") : end
+    };
+  }
+  function sortEvents(evts){
     evts.sort(function(a,b){
       if (a.allDay !== b.allDay) return a.allDay ? -1 : 1;
       if (a.allDay) return 0;
       return a.start - b.start;
     });
+    return evts;
+  }
 
+  function loadEvents(){
+    if (!accessToken){ renderAgendaEntry(); return; }
+    var s = new Date(); s.setHours(0,0,0,0);
+    var e = new Date(s); e.setDate(e.getDate()+1);
+    agendaState("Chargement de l\u2019agenda\u2026");
+    fetchRange(s, e, 50)
+      .then(renderAgenda)
+      .catch(function(err){
+        if (err.message === "auth"){
+          agendaState("La session Google a expir\u00e9.", "Se reconnecter", connectCalendar);
+        } else {
+          agendaState("L\u2019agenda n\u2019a pas pu \u00eatre charg\u00e9.", "R\u00e9essayer", loadEvents);
+        }
+      });
+  }
+
+  function evList(evts){
+    var now = new Date();
     var ol = el("ol","ev");
     evts.forEach(function(ev){
       var li = document.createElement("li");
@@ -675,11 +749,9 @@ textarea{width:100%; resize:vertical; background:var(--raised); border:1px solid
       else if (isPast) li.className = "past";
 
       if (ev.allDay){
-        var ad = el("span","allday","Journée");
-        li.appendChild(ad);
+        li.appendChild(el("span","allday","Journ\u00e9e"));
       } else {
         var t = document.createElement("time");
-        t.className = "";
         t.dateTime = hhmm(ev.start);
         if (isNow){
           var pin = el("span","pin");
@@ -694,15 +766,29 @@ textarea{width:100%; resize:vertical; background:var(--raised); border:1px solid
       what.appendChild(el("span","ttl", ev.title));
       var bits = [];
       if (ev.where) bits.push(ev.where);
-      if (!ev.allDay && ev.end) bits.push("jusqu'à " + hhmm(ev.end));
+      if (!ev.allDay && ev.end) bits.push("jusqu'\u00e0 " + hhmm(ev.end));
       if (bits.length) what.appendChild(el("span","sub", bits.join(", ")));
       li.appendChild(what);
       ol.appendChild(li);
     });
-    body.appendChild(ol);
+    return ol;
+  }
+
+  function renderAgenda(items){
+    var body = $("agenda-body");
+    body.textContent = "";
+    $("agenda-note").textContent = "";
+
+    if (items.length === 0){
+      body.appendChild(el("p","empty","Rien au programme aujourd'hui."));
+      return;
+    }
+
+    body.appendChild(evList(sortEvents(items.map(normEvent))));
   }
 
   function renderAgendaEntry(){
+    calEntry();
     if (!state.googleClientId){
       $("agenda-note").textContent = "Non connecté";
       agendaState("Ton agenda n'est pas encore branché. Il te faut un identifiant client Google, à créer une fois.",
@@ -711,6 +797,154 @@ textarea{width:100%; resize:vertical; background:var(--raised); border:1px solid
     }
     $("agenda-note").textContent = "";
     agendaState("Connecte ton calendrier Google pour voir tes évènements du jour.", "Connecter Google Calendar", connectCalendar);
+  }
+
+  // ---------- onglet calendrier ----------
+  var cal = { y: 0, m: 0, sel: "", cache: {} };
+  var CAL_MAX = 250;
+  function cap(t){ return t.charAt(0).toUpperCase() + t.slice(1); }
+  function calKey(){ return cal.y + "-" + cal.m; }
+  function calGridStart(){
+    var first = new Date(cal.y, cal.m, 1);
+    return new Date(cal.y, cal.m, 1 - ((first.getDay() + 6) % 7));
+  }
+  function calRows(){
+    var first = new Date(cal.y, cal.m, 1);
+    var days = new Date(cal.y, cal.m + 1, 0).getDate();
+    return Math.ceil((((first.getDay() + 6) % 7) + days) / 7);
+  }
+
+  function calState(message, actionLabel, onAction){
+    var box = $("cal-state");
+    box.textContent = "";
+    if (!message) return;
+    var wrap = el("div","state");
+    wrap.style.padding = "0";
+    wrap.appendChild(el("span", null, message));
+    if (actionLabel){
+      var b = el("button","btn", actionLabel);
+      b.type = "button";
+      b.addEventListener("click", onAction);
+      wrap.appendChild(b);
+    }
+    box.appendChild(wrap);
+  }
+  function calEntry(){
+    if (accessToken){ calState(""); return; }
+    if (!state.googleClientId){
+      calState("Ton agenda n\u2019est pas encore branch\u00e9.", "Ouvrir les r\u00e9glages", function(){ show($("tab-reglages")); });
+    } else {
+      calState("Connecte ton calendrier Google pour voir tes \u00e9v\u00e8nements.", "Connecter Google Calendar", connectCalendar);
+    }
+  }
+
+  function eventsByDay(items){
+    var map = {};
+    items.map(normEvent).forEach(function(ev){
+      var d = new Date(ev.from.getFullYear(), ev.from.getMonth(), ev.from.getDate());
+      var last = ev.allDay ? ev.to : new Date(Math.max(ev.to - 1, ev.from));
+      var guard = 0;
+      while (d < last || (guard === 0)){
+        (map[iso(d)] = map[iso(d)] || []).push(ev);
+        d = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1);
+        if (++guard > 62) break;
+      }
+    });
+    Object.keys(map).forEach(function(k){ sortEvents(map[k]); });
+    return map;
+  }
+
+  function renderCal(){
+    var title = new Date(cal.y, cal.m, 1).toLocaleDateString("fr-FR", { month:"long", year:"numeric" });
+    $("cal-title").textContent = cap(title);
+
+    var data = cal.cache[calKey()] || {};
+    var todayIso = iso(new Date());
+    var start = calGridStart();
+    var rows = calRows();
+    var cells = $("cal-cells");
+    cells.textContent = "";
+
+    for (var i = 0; i < rows * 7; i++){
+      var d = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i);
+      var k = iso(d);
+      var evs = data[k] || [];
+      var c = el("button","cell");
+      c.type = "button";
+      c.dataset.day = k;
+      c.setAttribute("aria-pressed", k === cal.sel ? "true" : "false");
+      if (d.getMonth() !== cal.m) c.classList.add("out");
+      if (k === todayIso) c.classList.add("today");
+      var label = d.toLocaleDateString("fr-FR", { weekday:"long", day:"numeric", month:"long" });
+      c.setAttribute("aria-label", label + (evs.length ? ", " + evs.length + (evs.length > 1 ? " \u00e9v\u00e8nements" : " \u00e9v\u00e8nement") : ""));
+
+      c.appendChild(el("span","dn", String(d.getDate())));
+      evs.slice(0, 2).forEach(function(ev){
+        c.appendChild(el("span","chip", (ev.allDay ? "" : hhmm(ev.start) + " ") + ev.title));
+      });
+      if (evs.length > 2) c.appendChild(el("span","more", "+" + (evs.length - 2)));
+      if (evs.length){
+        var dots = el("span","dots");
+        dots.setAttribute("aria-hidden","true");
+        for (var j = 0; j < Math.min(evs.length, 3); j++) dots.appendChild(document.createElement("i"));
+        c.appendChild(dots);
+      }
+      cells.appendChild(c);
+    }
+    renderCalDay();
+  }
+
+  function renderCalDay(){
+    var parts = cal.sel.split("-");
+    var d = new Date(+parts[0], +parts[1] - 1, +parts[2]);
+    $("cal-day-h").textContent = cap(d.toLocaleDateString("fr-FR", { weekday:"long", day:"numeric", month:"long" }));
+    var body = $("cal-day-body");
+    body.textContent = "";
+    var evs = (cal.cache[calKey()] || {})[cal.sel] || [];
+    if (!cal.cache[calKey()]){
+      body.appendChild(el("p","empty", accessToken ? "Chargement\u2026" : "Connecte ton calendrier pour voir tes \u00e9v\u00e8nements."));
+    } else if (evs.length === 0){
+      body.appendChild(el("p","empty","Rien au programme ce jour-l\u00e0."));
+    } else {
+      body.appendChild(evList(evs));
+    }
+  }
+
+  function loadCalMonth(){
+    renderCal();
+    if (!accessToken){ calEntry(); return; }
+    var key = calKey();
+    if (cal.cache[key]){ calState(""); return; }
+    var s = calGridStart();
+    var e = new Date(s.getFullYear(), s.getMonth(), s.getDate() + calRows() * 7);
+    calState("Chargement du mois\u2026");
+    fetchRange(s, e, CAL_MAX)
+      .then(function(items){
+        cal.cache[key] = eventsByDay(items);
+        if (key === calKey()){ calState(""); renderCal(); }
+      })
+      .catch(function(err){
+        if (err.message === "auth"){
+          cal.cache = {};
+          calState("La session Google a expir\u00e9.", "Se reconnecter", connectCalendar);
+        } else {
+          calState("Le mois n\u2019a pas pu \u00eatre charg\u00e9.", "R\u00e9essayer", loadCalMonth);
+        }
+      });
+  }
+
+  function calGo(delta){
+    var d = new Date(cal.y, cal.m + delta, 1);
+    cal.y = d.getFullYear(); cal.m = d.getMonth();
+    var sp = cal.sel.split("-");
+    var inMonth = (+sp[0] === cal.y && +sp[1] - 1 === cal.m);
+    if (!inMonth) cal.sel = iso(new Date(cal.y, cal.m, 1));
+    loadCalMonth();
+  }
+  function calToday(){
+    var t = new Date();
+    cal.y = t.getFullYear(); cal.m = t.getMonth(); cal.sel = iso(t);
+    loadCalMonth();
   }
 
   // ---------- réglages ----------
@@ -740,6 +974,23 @@ textarea{width:100%; resize:vertical; background:var(--raised); border:1px solid
   }
 
   // ---------- branchements ----------
+  $("cal-prev").addEventListener("click", function(){ calGo(-1); });
+  $("cal-next").addEventListener("click", function(){ calGo(1); });
+  $("cal-today").addEventListener("click", calToday);
+  $("cal-cells").addEventListener("click", function(e){
+    var b = e.target.closest ? e.target.closest(".cell") : null;
+    if (!b) return;
+    cal.sel = b.dataset.day;
+    var sp = cal.sel.split("-");
+    if (+sp[1] - 1 !== cal.m || +sp[0] !== cal.y){
+      cal.y = +sp[0]; cal.m = +sp[1] - 1;
+      loadCalMonth();
+    } else {
+      renderCal();
+    }
+    var again = $("cal-cells").querySelector('[data-day="' + cal.sel + '"]');
+    if (again) again.focus();
+  });
   $("go-notes").addEventListener("click", function(){ show($("tab-notes")); });
 
   $("task-form").addEventListener("submit", function(e){
@@ -762,6 +1013,7 @@ textarea{width:100%; resize:vertical; background:var(--raised); border:1px solid
     flash($("note-flash"));
   });
 
+  calToday();
   renderDay();
   renderTasks();
   renderHabits();
