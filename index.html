@@ -340,11 +340,30 @@ dialog::backdrop{background:rgba(8,9,10,.5)}
         </div>
       </form>
       <h2 id="h-sync" style="margin-top:28px">Synchronisation entre appareils</h2>
-      <p class="empty" style="padding:0">Tes tâches, habitudes et notes sont gardées dans un espace privé de ton Google Drive, invisible dans tes fichiers et réservé à cette app. Elles se mettent à jour toutes seules dès que tu es connecté à Google.</p>
+      <p class="empty" style="padding:0">Tes tâches, habitudes et notes se mettent à jour toutes seules entre tes appareils. Pour que ce soit continu, utilise un dépôt GitHub privé : le jeton n'expire pas chaque heure. Sans cela, la synchronisation passe par ton Google Drive et demande de se reconnecter à Google toutes les heures.</p>
       <p class="sub" id="sync-status" role="status">—</p>
+      <form class="form" id="gh-form">
+        <label for="gh-repo" style="font-size:15px; font-weight:500">Dépôt de données (privé)</label>
+        <input id="gh-repo" placeholder="enzogcode06/vesper-data" autocomplete="off" spellcheck="false">
+        <label for="gh-token" style="font-size:15px; font-weight:500">Jeton GitHub</label>
+        <input id="gh-token" type="password" placeholder="github_pat_…" autocomplete="off" spellcheck="false">
+        <div class="act" style="justify-content:flex-start">
+          <button class="btn" type="submit">Enregistrer et synchroniser</button>
+          <button class="btn ghost" type="button" id="gh-forget">Retirer</button>
+          <span class="flash" id="gh-flash" role="status">Enregistré</span>
+        </div>
+      </form>
       <div class="act" style="justify-content:flex-start">
-        <button class="btn" type="button" id="sync-now">Synchroniser maintenant</button>
+        <button class="btn ghost" type="button" id="sync-now">Synchroniser maintenant</button>
       </div>
+      <h3 style="margin-top:4px">Créer le dépôt et le jeton</h3>
+      <ol class="steps">
+        <li>Sur github.com, crée un dépôt <strong>privé</strong> nommé <code>vesper-data</code>.</li>
+        <li>Réglages GitHub, <strong>Developer settings</strong>, <strong>Personal access tokens</strong>, <strong>Fine-grained tokens</strong>, puis <strong>Generate new token</strong>.</li>
+        <li>Repository access : <strong>Only select repositories</strong>, uniquement <code>vesper-data</code>.</li>
+        <li>Permissions, Repository permissions : <strong>Contents</strong> en <strong>Read and write</strong>.</li>
+        <li>Génère le jeton, copie-le et colle-le ici. Ne le partage avec personne.</li>
+      </ol>
 
       <h3 style="margin-top:12px">Où la page doit vivre</h3>
       <p class="empty" style="padding:0">Google n&rsquo;autorise une connexion que depuis une adresse déclarée à l&rsquo;avance, et l&rsquo;aperçu dans Claude bloque les scripts extérieurs. Pour que le calendrier marche, cette page doit être hébergée à une adresse stable qui t&rsquo;appartient. Le plus simple et gratuit : GitHub Pages. Tout le reste de l&rsquo;app fonctionne sans cela.</p>
@@ -446,7 +465,7 @@ dialog::backdrop{background:rgba(8,9,10,.5)}
   // laissent une trace (tomb) : c'est ce qui permet de fusionner deux appareils sans rien perdre.
   var COLLS = ["tasks","habits","notes"];
   var SYNC_KEY = KEY + "-sync";
-  var sync = { sig:{}, tomb:{}, fileId:"", lastSync:0, dirty:false, running:false, again:false, driveOk:false, status:"", kind:"" };
+  var sync = { sig:{}, tomb:{}, fileId:"", ghSha:"", lastSync:0, dirty:false, running:false, again:false, driveOk:false, status:"", kind:"" };
   function sigOf(it){
     var c = {}; Object.keys(it).forEach(function(k){ if (k !== "updatedAt") c[k] = it[k]; });
     return JSON.stringify(c);
@@ -1310,6 +1329,24 @@ dialog::backdrop{background:rgba(8,9,10,.5)}
   // ---------- réglages ----------
   function initSettings(){
     $("gcal-id").value = state.googleClientId || "";
+    $("gh-repo").value = state.ghRepo || "";
+    if (state.ghToken) $("gh-token").placeholder = "Jeton enregistré (laisse vide pour le garder)";
+    $("gh-form").addEventListener("submit", function(e){
+      e.preventDefault();
+      var repo = $("gh-repo").value.trim().replace(/^https?:\/\/github\.com\//, "").replace(/\.git$/, "").replace(/\/$/, "");
+      var tok = $("gh-token").value.replace(/\s/g, "") || state.ghToken || "";
+      if (!/^[\w.-]+\/[\w.-]+$/.test(repo)){ setSyncStatus("Le dépôt doit s'écrire propriétaire/dépôt, par exemple enzogcode06/vesper-data.", "err"); return; }
+      if (!tok){ setSyncStatus("Colle le jeton GitHub pour activer la synchronisation continue.", "err"); return; }
+      state.ghRepo = repo; state.ghToken = tok; sync.ghSha = "";
+      $("gh-repo").value = repo; $("gh-token").value = "";
+      $("gh-token").placeholder = "Jeton enregistré (laisse vide pour le garder)";
+      save(); flash($("gh-flash")); syncNow();
+    });
+    $("gh-forget").addEventListener("click", function(){
+      state.ghRepo = ""; state.ghToken = ""; sync.ghSha = "";
+      $("gh-repo").value = ""; $("gh-token").value = ""; $("gh-token").placeholder = "github_pat_…";
+      save(); setSyncStatus(syncLabel());
+    });
     var origin = "";
     try{ origin = window.location.origin; }catch(e){}
     $("origin-value").textContent = origin || "l'adresse de cette page";
@@ -1382,11 +1419,14 @@ dialog::backdrop{background:rgba(8,9,10,.5)}
     sync.status = msg; sync.kind = kind || "";
     var el1 = $("sync-status"); if (el1) el1.textContent = msg;
   }
+  function ghOn(){ return !!(state.ghToken && /^[\w.-]+\/[\w.-]+$/.test(state.ghRepo || "")); }
+  function syncReady(){ return ghOn() || !!(accessToken && sync.driveOk); }
   function syncLabel(){
-    if (!state.googleClientId) return "Ajoute ton identifiant client Google pour synchroniser tes appareils.";
-    if (!accessToken) return "Connecte Google Calendar pour synchroniser.";
-    if (!sync.driveOk) return "Autorise le stockage priv\u00e9 (Drive) en te reconnectant.";
-    return sync.lastSync ? "Synchronis\u00e9 \u00e0 " + hhmm(new Date(sync.lastSync)) + "." : "Pr\u00eat \u00e0 synchroniser.";
+    if (ghOn()) return sync.lastSync ? "Synchronisé à " + hhmm(new Date(sync.lastSync)) + ", en continu via GitHub." : "Prêt à synchroniser, en continu via GitHub.";
+    if (!state.googleClientId) return "Ajoute un dépôt GitHub (recommandé) ou ton identifiant client Google pour synchroniser tes appareils.";
+    if (!accessToken) return "Connecte Google Calendar pour synchroniser, ou configure GitHub pour une synchronisation continue.";
+    if (!sync.driveOk) return "Autorise le stockage privé (Drive) en te reconnectant.";
+    return sync.lastSync ? "Synchronisé à " + hhmm(new Date(sync.lastSync)) + " (via Google Drive, à renouveler chaque heure)." : "Prêt à synchroniser.";
   }
 
   function driveFetch(url, opts){
@@ -1438,36 +1478,86 @@ dialog::backdrop{background:rgba(8,9,10,.5)}
     renderTasks(); renderHabits(); renderNotes();
   }
 
-  function syncNow(){
-    if (!accessToken || !sync.driveOk) { setSyncStatus(syncLabel()); return Promise.resolve(); }
-    if (sync.running){ sync.again = true; return Promise.resolve(); }
-    sync.running = true;
-    setSyncStatus("Synchronisation\u2026");
-    var local = dataOf({ tasks: state.tasks, habits: state.habits, notes: state.notes, tomb: sync.tomb });
+  // --- stockage GitHub (dépôt privé, jeton qui n'expire pas chaque heure) ---
+  var GH_FILE = "vesper-data.json";
+  function ghB64(str){ return btoa(unescape(encodeURIComponent(str))); }
+  function ghUnb64(b){ return decodeURIComponent(escape(atob(b.replace(/\s/g, "")))); }
+  function ghFetch(path, method, body){
+    var h = { Authorization: "Bearer " + state.ghToken, Accept: "application/vnd.github+json" };
+    if (body) h["Content-Type"] = "application/json";
+    return fetch("https://api.github.com/repos/" + state.ghRepo + path, { method: method, headers: h, body: body, cache: "no-store" }).then(function(r){
+      if (r.status === 401) throw new Error("gh-auth");
+      if (r.status === 403) throw new Error("gh-forbidden");
+      if (r.status === 404) throw new Error("404");
+      if (r.status === 409 || r.status === 422) throw new Error("conflict");
+      if (!r.ok) throw new Error("gh");
+      return r.json();
+    });
+  }
+  function ghPull(){
+    return ghFetch("/contents/" + GH_FILE, "GET").then(function(j){
+      sync.ghSha = j.sha;
+      return JSON.parse(ghUnb64(j.content));
+    }).catch(function(err){
+      if (err.message !== "404") throw err;
+      return ghFetch("", "GET").then(function(){ sync.ghSha = ""; return null; })
+        .catch(function(e2){ throw new Error(e2.message === "404" ? "gh-norepo" : e2.message); });
+    });
+  }
+  function ghPush(obj){
+    var body = { message: "sync " + new Date().toISOString(), content: ghB64(JSON.stringify(obj)) };
+    if (sync.ghSha) body.sha = sync.ghSha;
+    return ghFetch("/contents/" + GH_FILE, "PUT", JSON.stringify(body)).then(function(j){
+      sync.ghSha = (j.content && j.content.sha) || "";
+    }).catch(function(err){
+      if (err.message === "conflict") sync.ghSha = "";
+      throw err;
+    });
+  }
+  // --- stockage Google Drive ---
+  function drivePull(){
     var getId = sync.fileId ? Promise.resolve(sync.fileId) : driveFind();
     return getId.then(function(id){
-      if (!id) return driveCreate(local).then(function(nid){ sync.fileId = nid; });
+      if (!id){ sync.fileId = ""; return null; }
       sync.fileId = id;
       return driveRead(id).catch(function(err){
         if (err.message !== "404") throw err;
         sync.fileId = ""; return null;
-      }).then(function(remote){
-        if (!remote){ return driveCreate(local).then(function(nid){ sync.fileId = nid; }); }
-        remote = { tasks: remote.tasks || [], habits: remote.habits || [], notes: remote.notes || [], tomb: remote.tomb || {} };
-        var merged = mergeData(local, remote);
-        var chain = Promise.resolve();
-        if (!same(merged, local)) applyMerged(merged);
-        if (!same(merged, remote)) chain = driveUpdate(sync.fileId, merged);
-        return chain;
       });
+    });
+  }
+  function drivePush(obj){
+    return sync.fileId ? driveUpdate(sync.fileId, obj) : driveCreate(obj).then(function(id){ sync.fileId = id; });
+  }
+
+  function syncNow(){
+    if (!syncReady()){ setSyncStatus(syncLabel()); return Promise.resolve(); }
+    if (sync.running){ sync.again = true; return Promise.resolve(); }
+    sync.running = true;
+    setSyncStatus("Synchronisation…");
+    var useGh = ghOn();
+    var pull = useGh ? ghPull : drivePull, push = useGh ? ghPush : drivePush;
+    return pull().then(function(remote){
+      // l'état local est relu après le téléchargement : une modif faite pendant l'attente n'est jamais perdue
+      var local = dataOf({ tasks: state.tasks, habits: state.habits, notes: state.notes, tomb: sync.tomb });
+      if (!remote) return push(local);
+      remote = { tasks: remote.tasks || [], habits: remote.habits || [], notes: remote.notes || [], tomb: remote.tomb || {} };
+      var merged = mergeData(local, remote);
+      if (!same(merged, local)) applyMerged(merged);
+      if (!same(merged, remote)) return push(merged);
     }).then(function(){
       sync.lastSync = Date.now(); sync.dirty = false; persistSync();
       setSyncStatus(syncLabel(), "ok");
     }).catch(function(err){
-      if (err.message === "api") setSyncStatus("Active l\u2019API Google Drive dans ton projet Google Cloud, puis r\u00e9essaie.", "err");
-      else if (err.message === "scope") setSyncStatus(syncLabel(), "err");
-      else if (err.message === "auth") setSyncStatus("La session Google a expir\u00e9. Touche la page pour te reconnecter.", "err");
-      else setSyncStatus("Synchronisation impossible pour l\u2019instant (hors ligne ?). Elle reprendra toute seule.", "err");
+      var m = err.message;
+      if (m === "conflict") sync.again = true;
+      else if (m === "gh-auth") setSyncStatus("Le jeton GitHub est refusé ou a expiré. Crées-en un nouveau dans ces réglages.", "err");
+      else if (m === "gh-forbidden") setSyncStatus("GitHub refuse l'accès : le jeton doit avoir le droit Contents en lecture et écriture sur ce dépôt.", "err");
+      else if (m === "gh-norepo") setSyncStatus("Dépôt introuvable : vérifie son nom (propriétaire/dépôt) et que le jeton y a accès.", "err");
+      else if (m === "api") setSyncStatus("Active l’API Google Drive dans ton projet Google Cloud, puis réessaie.", "err");
+      else if (m === "scope") setSyncStatus(syncLabel(), "err");
+      else if (m === "auth") setSyncStatus("La session Google a expiré. Touche la page pour te reconnecter.", "err");
+      else setSyncStatus("Synchronisation impossible pour l’instant (hors ligne ?). Elle reprendra toute seule.", "err");
     }).then(function(){
       sync.running = false;
       if (sync.again){ sync.again = false; syncNow(); }
@@ -1479,6 +1569,8 @@ dialog::backdrop{background:rgba(8,9,10,.5)}
   }
   setInterval(function(){ if (!document.hidden) syncNow(); }, 90000);
   document.addEventListener("visibilitychange", function(){ if (!document.hidden) syncNow(); });
+  window.addEventListener("online", syncNow);
+  window.addEventListener("focus", syncNow);
 
   // ---------- reconnexion automatique ----------
   // Google ne donne qu'une heure d'accès sans serveur : au premier geste après expiration,
@@ -1514,10 +1606,11 @@ dialog::backdrop{background:rgba(8,9,10,.5)}
   });
   $("go-notes").addEventListener("click", function(){ show($("tab-notes")); });
   $("sync-now").addEventListener("click", function(){
-    if (!accessToken || !sync.driveOk){ connectCalendar(); return; }
+    if (!syncReady()){ connectCalendar(); return; }
     syncNow();
   });
   setSyncStatus(syncLabel());
+  syncNow();
 
   $("task-form").addEventListener("submit", function(e){
     e.preventDefault();
