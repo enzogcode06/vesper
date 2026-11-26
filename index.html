@@ -339,6 +339,13 @@ dialog::backdrop{background:rgba(8,9,10,.5)}
           <span class="flash" id="gcal-flash" role="status">Enregistré</span>
         </div>
       </form>
+      <h2 id="h-sync" style="margin-top:28px">Synchronisation entre appareils</h2>
+      <p class="empty" style="padding:0">Tes tâches, habitudes et notes sont gard\u00e9es dans un espace priv\u00e9 de ton Google Drive, invisible dans tes fichiers et r\u00e9serv\u00e9 \u00e0 cette app. Elles se mettent \u00e0 jour toutes seules d\u00e8s que tu es connect\u00e9 \u00e0 Google.</p>
+      <p class="sub" id="sync-status" role="status">—</p>
+      <div class="act" style="justify-content:flex-start">
+        <button class="btn" type="button" id="sync-now">Synchroniser maintenant</button>
+      </div>
+
       <h3 style="margin-top:12px">Où la page doit vivre</h3>
       <p class="empty" style="padding:0">Google n&rsquo;autorise une connexion que depuis une adresse déclarée à l&rsquo;avance, et l&rsquo;aperçu dans Claude bloque les scripts extérieurs. Pour que le calendrier marche, cette page doit être hébergée à une adresse stable qui t&rsquo;appartient. Le plus simple et gratuit : GitHub Pages. Tout le reste de l&rsquo;app fonctionne sans cela.</p>
 
@@ -346,7 +353,7 @@ dialog::backdrop{background:rgba(8,9,10,.5)}
       <ol class="steps">
         <li>Héberge d&rsquo;abord cette page, puis reviens ici : l&rsquo;adresse affichée en bas est celle à déclarer.</li>
         <li>Sur <code>console.cloud.google.com</code>, crée un projet.</li>
-        <li>Dans la bibliothèque d'API, active <strong>Google Calendar API</strong>.</li>
+        <li>Dans la bibliothèque d'API, active <strong>Google Calendar API</strong> et <strong>Google Drive API</strong> (pour la synchronisation).</li>
         <li>Configure l'écran de consentement OAuth en type <strong>Externe</strong>, et ajoute ton adresse Gmail comme utilisateur de test.</li>
         <li>Dans Identifiants, crée un <strong>ID client OAuth</strong> de type <strong>Application Web</strong>.</li>
         <li>Dans <em>Origines JavaScript autorisées</em>, colle l'adresse affichée ci-dessous.</li>
@@ -409,6 +416,8 @@ dialog::backdrop{background:rgba(8,9,10,.5)}
     return null;
   }
   function save(){
+    var changed = stamp();
+    if (changed){ sync.dirty = true; persistSync(); scheduleSync(); }
     if (memoryOnly) return;
     try{ localStorage.setItem(KEY, JSON.stringify(state)); }
     catch(e){ memoryOnly = true; }
@@ -431,6 +440,48 @@ dialog::backdrop{background:rgba(8,9,10,.5)}
   if (!state.habits) state.habits = [];
   if (!state.tasks) state.tasks = [];
   if (!state.notes) state.notes = [];
+
+  // ---------- synchronisation : suivi des changements ----------
+  // Chaque élément porte un updatedAt posé à chaque modification, et les suppressions
+  // laissent une trace (tomb) : c'est ce qui permet de fusionner deux appareils sans rien perdre.
+  var COLLS = ["tasks","habits","notes"];
+  var SYNC_KEY = KEY + "-sync";
+  var sync = { sig:{}, tomb:{}, fileId:"", lastSync:0, dirty:false, running:false, again:false, driveOk:false, status:"", kind:"" };
+  function sigOf(it){
+    var c = {}; Object.keys(it).forEach(function(k){ if (k !== "updatedAt") c[k] = it[k]; });
+    return JSON.stringify(c);
+  }
+  function persistSync(){
+    try{ localStorage.setItem(SYNC_KEY, JSON.stringify({ sig:sync.sig, tomb:sync.tomb, fileId:sync.fileId, lastSync:sync.lastSync, dirty:sync.dirty })); }catch(e){}
+  }
+  function baselineSig(){
+    sync.sig = {};
+    COLLS.forEach(function(c){ state[c].forEach(function(it){ sync.sig[it.id] = sigOf(it); }); });
+  }
+  (function(){
+    var r = null;
+    try{ r = JSON.parse(localStorage.getItem(SYNC_KEY) || "null"); }catch(e){}
+    if (r && r.sig){
+      sync.sig = r.sig; sync.tomb = r.tomb || {}; sync.fileId = r.fileId || "";
+      sync.lastSync = r.lastSync || 0; sync.dirty = !!r.dirty;
+    } else {
+      baselineSig(); // l'existant garde updatedAt = 0 tant qu'on n'y touche pas
+    }
+  })();
+  function stamp(){
+    var now = Date.now(), seen = {}, changed = false;
+    COLLS.forEach(function(c){
+      state[c].forEach(function(it){
+        seen[it.id] = true;
+        var sg = sigOf(it);
+        if (sync.sig[it.id] !== sg){ it.updatedAt = now; sync.sig[it.id] = sg; changed = true; }
+      });
+    });
+    Object.keys(sync.sig).forEach(function(id){
+      if (!seen[id]){ delete sync.sig[id]; sync.tomb[id] = now; changed = true; }
+    });
+    return changed;
+  }
 
   // ---------- dates ----------
   function iso(d){
@@ -885,7 +936,7 @@ dialog::backdrop{background:rgba(8,9,10,.5)}
   // ---------- calendrier Google ----------
   var accessToken = null;
   var tokenClient = null;
-  var SCOPE = "https://www.googleapis.com/auth/calendar.readonly";
+  var SCOPE = "https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/drive.appdata";
 
   function agendaState(message, actionLabel, onAction){
     var body = $("agenda-body");
@@ -940,8 +991,10 @@ dialog::backdrop{background:rgba(8,9,10,.5)}
               accessToken = resp.access_token;
               tokenExpiry = Date.now() + Math.max(60, (+resp.expires_in || 3600) - 120) * 1000;
               if (!state.calLinked){ state.calLinked = true; save(); }
+              sync.driveOk = String(resp.scope || "").indexOf("drive.appdata") !== -1;
               autoMode = false;
               loadEvents(); loadCalMonth();
+              syncNow();
             }
             else if (autoMode){ autoMode = false; renderAgendaEntry(); }
             else { agendaState("La connexion a été refusée ou annulée.", "Réessayer", connectCalendar); }
@@ -1283,6 +1336,150 @@ dialog::backdrop{background:rgba(8,9,10,.5)}
     });
   }
 
+  // ---------- synchronisation entre appareils (Google Drive, espace privé de l'app) ----------
+  var DRIVE_SCOPE = "https://www.googleapis.com/auth/drive.appdata";
+  var SYNC_FILE = "vesper-data.json";
+  var syncTimer = null;
+
+  function idNum(id){ var m = /^[a-z]+(\d+)$/.exec(id); return m ? +m[1] : 0; }
+  function mergeColl(name, L, R, tomb){
+    var byId = {}, order = [];
+    function take(it){
+      var cur = byId[it.id];
+      if (!cur){ byId[it.id] = it; order.push(it.id); return; }
+      var a = cur.updatedAt || 0, b = it.updatedAt || 0, win;
+      if (a > b) win = cur;
+      else if (b > a) win = it;
+      else if (name === "habits"){
+        win = JSON.parse(JSON.stringify(it));
+        var u = {}; (cur.dates || []).concat(it.dates || []).forEach(function(d){ u[d] = 1; });
+        win.dates = Object.keys(u).sort();
+      } else win = it;
+      byId[it.id] = win;
+    }
+    (L || []).forEach(take);
+    (R || []).forEach(take);
+    var out = order.map(function(id){ return byId[id]; }).filter(function(it){
+      return !(tomb[it.id] && tomb[it.id] >= (it.updatedAt || 0));
+    });
+    if (name !== "habits") out.sort(function(x, y){ return idNum(x.id) - idNum(y.id); });
+    return out;
+  }
+  function mergeData(L, R){
+    var tomb = {}, cut = Date.now() - 90 * 86400000;
+    [L.tomb || {}, R.tomb || {}].forEach(function(t){
+      Object.keys(t).forEach(function(id){ if (t[id] > cut) tomb[id] = Math.max(tomb[id] || 0, t[id]); });
+    });
+    return { v:1, tasks: mergeColl("tasks", L.tasks, R.tasks, tomb), habits: mergeColl("habits", L.habits, R.habits, tomb),
+             notes: mergeColl("notes", L.notes, R.notes, tomb), tomb: tomb };
+  }
+  function dataOf(st){ return { v:1, tasks: st.tasks, habits: st.habits, notes: st.notes, tomb: st.tomb }; }
+  function same(a, b){
+    return JSON.stringify([a.tasks, a.habits, a.notes, a.tomb]) === JSON.stringify([b.tasks, b.habits, b.notes, b.tomb]);
+  }
+
+  function setSyncStatus(msg, kind){
+    sync.status = msg; sync.kind = kind || "";
+    var el1 = $("sync-status"); if (el1) el1.textContent = msg;
+  }
+  function syncLabel(){
+    if (!state.googleClientId) return "Ajoute ton identifiant client Google pour synchroniser tes appareils.";
+    if (!accessToken) return "Connecte Google Calendar pour synchroniser.";
+    if (!sync.driveOk) return "Autorise le stockage priv\u00e9 (Drive) en te reconnectant.";
+    return sync.lastSync ? "Synchronis\u00e9 \u00e0 " + hhmm(new Date(sync.lastSync)) + "." : "Pr\u00eat \u00e0 synchroniser.";
+  }
+
+  function driveFetch(url, opts){
+    opts = opts || {};
+    opts.headers = Object.assign({ Authorization: "Bearer " + accessToken }, opts.headers || {});
+    return fetch(url, opts).then(function(r){
+      if (r.status === 401){ accessToken = null; throw new Error("auth"); }
+      if (r.status === 403){
+        return r.json().catch(function(){ return {}; }).then(function(j){
+          var reason = j && j.error && j.error.errors && j.error.errors[0] && j.error.errors[0].reason;
+          if (reason === "accessNotConfigured" || (j && j.error && /has not been used|disabled/i.test(j.error.message || ""))) throw new Error("api");
+          if (reason === "insufficientPermissions"){ sync.driveOk = false; throw new Error("scope"); }
+          throw new Error("auth");
+        });
+      }
+      if (r.status === 404) throw new Error("404");
+      if (!r.ok) throw new Error("drive");
+      return r;
+    });
+  }
+  function driveFind(){
+    return driveFetch("https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&pageSize=1&fields=files(id)&q=" + encodeURIComponent("name='" + SYNC_FILE + "'"))
+      .then(function(r){ return r.json(); })
+      .then(function(j){ return (j.files && j.files[0] && j.files[0].id) || ""; });
+  }
+  function driveRead(id){
+    return driveFetch("https://www.googleapis.com/drive/v3/files/" + id + "?alt=media").then(function(r){ return r.json(); });
+  }
+  function driveCreate(obj){
+    var b = "vesper" + Date.now();
+    var body = "--" + b + "\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n" + JSON.stringify({ name: SYNC_FILE, parents: ["appDataFolder"] })
+      + "\r\n--" + b + "\r\nContent-Type: application/json\r\n\r\n" + JSON.stringify(obj) + "\r\n--" + b + "--";
+    return driveFetch("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id", {
+      method: "POST", headers: { "Content-Type": "multipart/related; boundary=" + b }, body: body
+    }).then(function(r){ return r.json(); }).then(function(j){ return j.id; });
+  }
+  function driveUpdate(id, obj){
+    return driveFetch("https://www.googleapis.com/upload/drive/v3/files/" + id + "?uploadType=media", {
+      method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(obj)
+    });
+  }
+
+  function applyMerged(m){
+    state.tasks = m.tasks; state.habits = m.habits; state.notes = m.notes;
+    sync.tomb = m.tomb;
+    baselineSig();
+    if (!memoryOnly){ try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch(e){ memoryOnly = true; } }
+    sweepDone();
+    renderTasks(); renderHabits(); renderNotes();
+  }
+
+  function syncNow(){
+    if (!accessToken || !sync.driveOk) { setSyncStatus(syncLabel()); return Promise.resolve(); }
+    if (sync.running){ sync.again = true; return Promise.resolve(); }
+    sync.running = true;
+    setSyncStatus("Synchronisation\u2026");
+    var local = dataOf({ tasks: state.tasks, habits: state.habits, notes: state.notes, tomb: sync.tomb });
+    var getId = sync.fileId ? Promise.resolve(sync.fileId) : driveFind();
+    return getId.then(function(id){
+      if (!id) return driveCreate(local).then(function(nid){ sync.fileId = nid; });
+      sync.fileId = id;
+      return driveRead(id).catch(function(err){
+        if (err.message !== "404") throw err;
+        sync.fileId = ""; return null;
+      }).then(function(remote){
+        if (!remote){ return driveCreate(local).then(function(nid){ sync.fileId = nid; }); }
+        remote = { tasks: remote.tasks || [], habits: remote.habits || [], notes: remote.notes || [], tomb: remote.tomb || {} };
+        var merged = mergeData(local, remote);
+        var chain = Promise.resolve();
+        if (!same(merged, local)) applyMerged(merged);
+        if (!same(merged, remote)) chain = driveUpdate(sync.fileId, merged);
+        return chain;
+      });
+    }).then(function(){
+      sync.lastSync = Date.now(); sync.dirty = false; persistSync();
+      setSyncStatus(syncLabel(), "ok");
+    }).catch(function(err){
+      if (err.message === "api") setSyncStatus("Active l\u2019API Google Drive dans ton projet Google Cloud, puis r\u00e9essaie.", "err");
+      else if (err.message === "scope") setSyncStatus(syncLabel(), "err");
+      else if (err.message === "auth") setSyncStatus("La session Google a expir\u00e9. Touche la page pour te reconnecter.", "err");
+      else setSyncStatus("Synchronisation impossible pour l\u2019instant (hors ligne ?). Elle reprendra toute seule.", "err");
+    }).then(function(){
+      sync.running = false;
+      if (sync.again){ sync.again = false; syncNow(); }
+    });
+  }
+  function scheduleSync(){
+    clearTimeout(syncTimer);
+    syncTimer = setTimeout(syncNow, 2500);
+  }
+  setInterval(function(){ if (!document.hidden) syncNow(); }, 90000);
+  document.addEventListener("visibilitychange", function(){ if (!document.hidden) syncNow(); });
+
   // ---------- reconnexion automatique ----------
   // Google ne donne qu'une heure d'accès sans serveur : au premier geste après expiration,
   // on redemande un accès en silence (le compte a déjà donné son accord).
@@ -1316,6 +1513,11 @@ dialog::backdrop{background:rgba(8,9,10,.5)}
     if (again) again.focus();
   });
   $("go-notes").addEventListener("click", function(){ show($("tab-notes")); });
+  $("sync-now").addEventListener("click", function(){
+    if (!accessToken || !sync.driveOk){ connectCalendar(); return; }
+    syncNow();
+  });
+  setSyncStatus(syncLabel());
 
   $("task-form").addEventListener("submit", function(e){
     e.preventDefault();
