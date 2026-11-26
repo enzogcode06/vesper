@@ -197,6 +197,51 @@ dialog::backdrop{background:rgba(8,9,10,.5)}
 .rbar{position:relative; height:6px; border-radius:3px; background:var(--dot-off)}
 .rbar i{position:absolute; top:0; bottom:0; border-radius:3px; background:var(--accent)}
 .wsec{font-size:14px; font-weight:600; margin:0 0 8px}
+.mbar{display:flex; flex-wrap:wrap; gap:10px}
+.mbar input{flex:1 1 220px; min-width:0; min-height:46px; background:var(--raised); border:1px solid var(--line); border-radius:12px; padding:0 14px}
+.mem{display:grid; grid-template-columns:minmax(250px,320px) minmax(0,1fr); gap:24px; align-items:start}
+.mem-side{padding:12px; position:sticky; top:12px; max-height:calc(100vh - 24px); overflow:auto}
+.mrow{display:flex; align-items:center; gap:8px; width:100%; min-height:42px; padding:6px 10px; border:0; border-radius:12px; background:none; text-align:left; font-size:15px; color:var(--ink)}
+.mrow:hover{background:var(--raised)}
+.mrow[aria-current="true"]{background:var(--raised); font-weight:600; box-shadow:inset 0 0 0 1px var(--line)}
+.mrow svg{color:var(--muted)}
+.mrow .nm{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.mrow .ct{font-size:12px; color:var(--muted); font-variant-numeric:tabular-nums}
+.mrow .chev{transition:transform .15s}
+.mrow[aria-expanded="true"] .chev{transform:rotate(90deg)}
+.mrow.leaf .nm{color:var(--muted)}
+.mrow.leaf[aria-current="true"] .nm{color:var(--ink)}
+.mem-main{padding:clamp(18px,3vw,36px); min-height:440px; display:flex; flex-direction:column; gap:18px; min-width:0}
+.mem-crumb{margin:0; font-size:14px; color:var(--muted)}
+.mem-h{font-size:clamp(30px,5vw,44px); line-height:1.1}
+.mem-title{font-family:var(--serif); font-size:clamp(30px,5vw,44px); line-height:1.1; letter-spacing:-.01em; background:none; border:0; padding:0; width:100%; color:var(--ink)}
+.mem-body{min-height:260px; font-size:17px; line-height:1.65}
+.mlist{display:flex; flex-direction:column}
+.mitem{display:flex; align-items:center; gap:10px; border-top:1px solid var(--line)}
+.mitem .main{flex:1 1 auto; min-width:0; background:none; border:0; text-align:left; padding:14px 2px; display:flex; flex-direction:column; gap:3px; min-height:56px}
+.mitem .t{font-size:17px; font-weight:600; overflow-wrap:anywhere; display:flex; align-items:center}
+.mitem .s{font-size:14px; color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.mitem .d{font-size:13px; color:var(--muted)}
+.msel{min-height:44px; max-width:190px; border:1px solid var(--line); background:var(--raised); border-radius:12px; padding:0 10px; color:var(--ink); font-size:15px}
+.mfield{display:flex; align-items:center; gap:12px; flex-wrap:wrap; font-size:14px; color:var(--muted)}
+.mact{display:flex; flex-wrap:wrap; gap:10px}
+.mfoot{display:flex; align-items:center; gap:14px; flex-wrap:wrap; padding-top:6px}
+.mlinksbox{display:flex; flex-direction:column; gap:10px}
+.msec{font-size:14px; font-weight:600}
+.mlinks{display:flex; flex-wrap:wrap; gap:8px}
+.mchip{min-height:42px; padding:0 16px; border-radius:999px; border:1px solid var(--line-strong); background:none; font-size:14px; font-weight:500; color:var(--accent)}
+.mchip:hover{background:var(--raised)}
+.mchip.new{border-style:dashed}
+.mchip.sug{color:var(--ink); border-color:var(--line)}
+.btn.danger{background:#B3261E; color:#fff; border-color:#B3261E}
+.mem-back{display:none}
+@media (max-width:760px){
+  .mem{grid-template-columns:1fr}
+  .mem[data-main="1"] .mem-side{display:none}
+  .mem[data-main="0"] .mem-main{display:none}
+  .mem-side{position:static; max-height:none}
+  .mem-back{display:inline-flex}
+}
 @media (max-width:520px){.wrow{grid-template-columns:minmax(64px,1fr) 28px 36px 30px minmax(40px,2fr) 30px; gap:6px}}
 </style>
 </head>
@@ -208,7 +253,7 @@ dialog::backdrop{background:rgba(8,9,10,.5)}
       <button class="tab" role="tab" id="tab-today" aria-controls="view-today" aria-selected="true">Aujourd'hui</button>
       <button class="tab" role="tab" id="tab-calendrier" aria-controls="view-calendrier" aria-selected="false">Calendrier</button>
       <button class="tab" role="tab" id="tab-life" aria-controls="view-life" aria-selected="false">Life Center</button>
-      <button class="tab" role="tab" id="tab-notes" aria-controls="view-notes" aria-selected="false">Notes</button>
+      <button class="tab" role="tab" id="tab-notes" aria-controls="view-notes" aria-selected="false">Memoria</button>
       <button class="tab" role="tab" id="tab-finance" aria-controls="view-finance" aria-selected="false">Finance</button>
       <button class="tab" role="tab" id="tab-sante" aria-controls="view-sante" aria-selected="false">Santé</button>
       <button class="tab" role="tab" id="tab-bureau" aria-controls="view-bureau" aria-selected="false">Bureau</button>
@@ -274,8 +319,8 @@ dialog::backdrop{background:rgba(8,9,10,.5)}
     <section class="panel note" aria-labelledby="h-note">
       <div class="left">
         <h2 id="h-note">Note rapide</h2>
-        <p>Ce que tu écris ici arrive dans l'onglet Notes, prêt à être rattaché.</p>
-        <button class="link" id="go-notes">Ouvrir les notes</button>
+        <p>Ce que tu écris ici arrive dans la boîte de réception de Memoria, prêt à être rangé.</p>
+        <button class="link" id="go-notes">Ouvrir Memoria</button>
       </div>
       <div class="right">
         <label class="vh" for="note-input">Note rapide</label>
@@ -311,17 +356,27 @@ dialog::backdrop{background:rgba(8,9,10,.5)}
     </div>
   </div>
 
-  <!-- NOTES -->
+  <!-- MEMORIA -->
   <div class="view" id="view-notes" role="tabpanel" aria-labelledby="tab-notes" hidden>
-    <header class="head"><h1>Notes</h1></header>
-    <section aria-labelledby="h-inbox" style="display:flex; flex-direction:column; gap:14px">
-      <div class="rowhead">
-        <h2 id="h-inbox">Boîte de réception</h2>
-        <span class="sub" id="note-count"></span>
+    <header class="head"><h1>Memoria</h1><span class="sub" id="mem-count"></span></header>
+    <div style="display:flex; flex-direction:column; gap:14px">
+      <form class="adder" id="mem-capture" style="border-top:0; padding-top:0; position:relative">
+        <label class="vh" for="mem-cap">Capture rapide</label>
+        <input id="mem-cap" placeholder="Jette une idée, un lien, une citation" autocomplete="off">
+        <button class="btn" type="submit">Ajouter</button>
+        <span class="flash" id="mem-flash" aria-live="polite" style="position:absolute; right:2px; top:-24px; font-size:13px">Ajouté à la boîte de réception</span>
+      </form>
+      <div class="mbar">
+        <label class="vh" for="mem-search">Rechercher dans Memoria</label>
+        <input id="mem-search" type="search" placeholder="Rechercher dans Memoria" autocomplete="off">
+        <button class="btn ghost" id="mem-newnote" type="button">Nouvelle note</button>
+        <button class="btn ghost" id="mem-newfolder" type="button">Nouveau dossier</button>
       </div>
-      <ul class="nl" id="note-list"></ul>
-      <p class="empty ruled" id="note-empty" hidden>Rien pour l'instant. Écris une note rapide depuis l'onglet Aujourd'hui et elle atterrira ici.</p>
-    </section>
+    </div>
+    <div class="mem" id="mem" data-main="0">
+      <aside class="mem-side panel" aria-label="Dossiers et notes"><div id="mem-tree"></div></aside>
+      <section class="mem-main panel" id="mem-main"></section>
+    </div>
   </div>
 
   <!-- RÉGLAGES -->
@@ -459,11 +514,13 @@ dialog::backdrop{background:rgba(8,9,10,.5)}
   if (!state.habits) state.habits = [];
   if (!state.tasks) state.tasks = [];
   if (!state.notes) state.notes = [];
+  if (!state.folders) state.folders = [];
+  if (!state.memUi) state.memUi = { open:{}, view:{ type:"inbox", id:"" } };
 
   // ---------- synchronisation : suivi des changements ----------
   // Chaque élément porte un updatedAt posé à chaque modification, et les suppressions
   // laissent une trace (tomb) : c'est ce qui permet de fusionner deux appareils sans rien perdre.
-  var COLLS = ["tasks","habits","notes"];
+  var COLLS = ["tasks","habits","notes","folders"];
   var SYNC_KEY = KEY + "-sync";
   var sync = { sig:{}, tomb:{}, fileId:"", ghSha:"", lastSync:0, dirty:false, running:false, again:false, driveOk:false, status:"", kind:"" };
   function sigOf(it){
@@ -928,29 +985,462 @@ dialog::backdrop{background:rgba(8,9,10,.5)}
     $("habit-count").textContent = c + " sur " + state.habits.length + " aujourd'hui";
   }
 
-  // ---------- notes ----------
-  function renderNotes(){
-    var ul = $("note-list");
-    ul.textContent = "";
-    state.notes.slice().reverse().forEach(function(n){
-      var li = document.createElement("li");
-      var box = el("span");
-      box.style.cssText = "flex:1 1 auto; min-width:0; display:flex; flex-direction:column";
-      box.appendChild(el("span","txt", n.text));
-      box.appendChild(el("span","when", new Date(n.at).toLocaleDateString("fr-FR", { day:"numeric", month:"short" })));
-      li.appendChild(box);
-      li.appendChild(killBtn("Supprimer la note", function(){
-        state.notes = state.notes.filter(function(x){ return x.id !== n.id; });
-        save(); renderNotes();
-      }));
-      ul.appendChild(li);
-    });
-    var empty = state.notes.length === 0;
-    $("note-empty").hidden = !empty;
-    $("note-list").hidden = empty;
-    $("note-count").textContent = empty ? "Vide"
-      : state.notes.length === 1 ? "1 note" : state.notes.length + " notes";
+  // ---------- Memoria ----------
+  var memQuery = "", memMobile = false, memSaveT = null, memPending = false, memEd = null, memFocus = "";
+  var ICO = {
+    chev:'<path d="m9 6 6 6-6 6"/>',
+    back:'<path d="m15 6-6 6 6 6"/>',
+    doc:'<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/>',
+    folder:'<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
+    inbox:'<path d="M4 13h4l1 3h6l1-3h4"/><path d="M4 13l2-8h12l2 8v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"/>',
+    plus:'<path d="M12 5v14M5 12h14"/>'
+  };
+  function ico(k, size, cls){
+    var s = el("span", cls || null);
+    s.style.cssText = "display:inline-flex; flex:none";
+    s.innerHTML = svg(ICO[k], size || 18);
+    return s;
   }
+  function memNorm(s){
+    return String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/\s+/g, " ").trim();
+  }
+  function noteTitle(n){
+    var ls = String(n.text || "").split("\n");
+    for (var i = 0; i < ls.length; i++){ var t = ls[i].trim(); if (t) return t; }
+    return "Sans titre";
+  }
+  function noteBody(n){
+    var ls = String(n.text || "").split("\n"), i = 0;
+    while (i < ls.length && !ls[i].trim()) i++;
+    return ls.slice(i + 1).join(" ").replace(/\s+/g, " ").trim();
+  }
+  function noteOf(id){ for (var i = 0; i < state.notes.length; i++) if (state.notes[i].id === id) return state.notes[i]; return null; }
+  function folderOf(id){ for (var i = 0; i < state.folders.length; i++) if (state.folders[i].id === id) return state.folders[i]; return null; }
+  function noteFolder(n){ return n.folder && folderOf(n.folder) ? n.folder : ""; }
+  function folderName(f){ return (f.name || "").trim() || "Sans nom"; }
+  function uid(p){
+    var t = Date.now(), id = p + t;
+    while (noteOf(id) || folderOf(id)){ t++; id = p + t; }
+    return id;
+  }
+  function byTitle(a, b){ return memNorm(noteTitle(a)).localeCompare(memNorm(noteTitle(b))); }
+  function byName(a, b){ return memNorm(folderName(a)).localeCompare(memNorm(folderName(b))); }
+  function byRecent(a, b){ return (b.updatedAt || b.at || 0) - (a.updatedAt || a.at || 0); }
+
+  function memEff(){
+    var eff = {}, ids = {};
+    state.folders.forEach(function(f){ ids[f.id] = 1; });
+    state.folders.forEach(function(f){ eff[f.id] = (f.parent && ids[f.parent] && f.parent !== f.id) ? f.parent : ""; });
+    state.folders.forEach(function(f){
+      var seen = {}, cur = f.id;
+      while (cur){ if (seen[cur]){ eff[f.id] = ""; break; } seen[cur] = 1; cur = eff[cur]; }
+    });
+    return eff;
+  }
+  function memIsDesc(id, anc, eff){
+    var cur = eff[id], n = 0;
+    while (cur && n++ < 100){ if (cur === anc) return true; cur = eff[cur]; }
+    return false;
+  }
+  function memFlat(){
+    var eff = memEff(), out = [];
+    (function walk(p, d){
+      state.folders.filter(function(f){ return eff[f.id] === p; }).sort(byName).forEach(function(f){
+        out.push({ f:f, depth:d }); walk(f.id, d + 1);
+      });
+    })("", 0);
+    return out;
+  }
+  function memPath(fid){
+    var eff = memEff(), names = [], cur = fid, n = 0;
+    while (cur && n++ < 100){ var f = folderOf(cur); if (!f) break; names.unshift(folderName(f)); cur = eff[cur]; }
+    return names;
+  }
+
+  var LINK_SRC = "\\[\\[([^\\[\\]\\n|]+?)(?:\\|([^\\[\\]\\n]*))?\\]\\]";
+  function linksIn(text){
+    var out = [], m, re = new RegExp(LINK_SRC, "g");
+    while ((m = re.exec(text || ""))) out.push({ target:m[1].trim(), label:(m[2] || "").trim(), start:m.index, end:m.index + m[0].length });
+    return out;
+  }
+  function titleIndex(){
+    var idx = {};
+    state.notes.slice().sort(function(a, b){ return (a.at || 0) - (b.at || 0); }).forEach(function(n){
+      var k = memNorm(noteTitle(n));
+      if (!(k in idx)) idx[k] = n;
+    });
+    return idx;
+  }
+  function backlinks(n, idx){
+    return state.notes.filter(function(o){
+      if (o.id === n.id) return false;
+      return linksIn(o.text).some(function(l){ var t = idx[memNorm(l.target)]; return t && t.id === n.id; });
+    }).sort(byTitle);
+  }
+  function suggestions(n, idx){
+    var text = n.text || "", ranges = linksIn(text), linked = {}, own = memNorm(noteTitle(n)), out = [], seen = {};
+    ranges.forEach(function(l){ var t = idx[memNorm(l.target)]; if (t) linked[t.id] = 1; });
+    state.notes.forEach(function(o){
+      if (out.length >= 5 || o.id === n.id || linked[o.id]) return;
+      var title = noteTitle(o), k = memNorm(title);
+      if (title.length < 3 || title.length > 60 || k === own || seen[k] || idx[k] !== o) return;
+      seen[k] = 1;
+      var re = new RegExp("(^|[^\\p{L}\\p{N}])(" + title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + ")(?![\\p{L}\\p{N}])", "giu"), m;
+      while ((m = re.exec(text))){
+        var pos = m.index + m[1].length, end = pos + m[2].length;
+        var inside = ranges.some(function(r){ return pos >= r.start && pos < r.end; });
+        if (!inside){ out.push({ note:o, pos:pos, end:end, word:m[2] }); break; }
+      }
+    });
+    return out;
+  }
+
+  function memSchedule(){ memPending = true; clearTimeout(memSaveT); memSaveT = setTimeout(memFlush, 300); }
+  function memFlush(){
+    clearTimeout(memSaveT);
+    if (!memPending) return;
+    memPending = false;
+    save();
+    memRenderSide();
+  }
+  window.addEventListener("pagehide", memFlush);
+  document.addEventListener("visibilitychange", function(){ if (document.hidden) memFlush(); });
+
+  function memView(){ return state.memUi.view || { type:"inbox", id:"" }; }
+  function memGo(type, id){
+    memFlush();
+    state.memUi.view = { type:type, id:id || "" };
+    var fid = type === "folder" ? id : type === "note" && noteOf(id) ? noteFolder(noteOf(id)) : "";
+    var eff = memEff(), cur = fid, n = 0;
+    while (cur && n++ < 100){ state.memUi.open[cur] = true; cur = eff[cur]; }
+    memMobile = true;
+    save();
+    memRender();
+  }
+  function memNewNote(folder, text){
+    memFlush();
+    var n = { id:uid("n"), text:text || "", folder:folder || "", at:Date.now() };
+    state.notes.push(n);
+    memFocus = "title";
+    memGo("note", n.id);
+    return n;
+  }
+  function memNewFolder(parent){
+    memFlush();
+    var f = { id:uid("f"), name:"Nouveau dossier", parent:parent || "", at:Date.now() };
+    state.folders.push(f);
+    if (parent) state.memUi.open[parent] = true;
+    memFocus = "folder";
+    memGo("folder", f.id);
+  }
+  function twoStep(label, confirmLabel, onConfirm){
+    var b = el("button","btn ghost", label), t = null;
+    b.type = "button";
+    b.addEventListener("click", function(){
+      if (b.dataset.armed){ clearTimeout(t); onConfirm(); return; }
+      b.dataset.armed = "1"; b.textContent = confirmLabel; b.classList.add("danger");
+      t = setTimeout(function(){ delete b.dataset.armed; b.textContent = label; b.classList.remove("danger"); }, 4000);
+    });
+    return b;
+  }
+  function folderSelect(current, rootLabel, exclude){
+    var s = el("select","msel"), eff = memEff();
+    var o0 = el("option", null, rootLabel); o0.value = ""; s.appendChild(o0);
+    memFlat().forEach(function(x){
+      if (exclude && (x.f.id === exclude || memIsDesc(x.f.id, exclude, eff))) return;
+      var o = el("option", null, "  ".repeat(x.depth) + folderName(x.f));
+      o.value = x.f.id; s.appendChild(o);
+    });
+    s.value = current || "";
+    return s;
+  }
+
+  function memRow(depth, icon, label, count, current, expanded, leaf, onClick){
+    var b = el("button", "mrow" + (leaf ? " leaf" : ""));
+    b.type = "button";
+    b.style.paddingLeft = (10 + depth * 16) + "px";
+    if (expanded != null){
+      b.setAttribute("aria-expanded", expanded ? "true" : "false");
+      b.appendChild(ico("chev", 14, "chev"));
+    } else {
+      var sp = el("span"); sp.style.cssText = "width:14px; flex:none"; b.appendChild(sp);
+    }
+    b.appendChild(ico(icon, 16));
+    b.appendChild(el("span","nm", label));
+    if (count != null) b.appendChild(el("span","ct", String(count)));
+    if (current) b.setAttribute("aria-current", "true");
+    b.addEventListener("click", onClick);
+    return b;
+  }
+
+  function memRenderSide(){
+    var box = $("mem-tree"), v = memView(), eff = memEff();
+    box.textContent = "";
+    var inbox = state.notes.filter(function(n){ return !noteFolder(n); });
+    box.appendChild(memRow(0, "inbox", "Boîte de réception", inbox.length, v.type === "inbox", null, false, function(){
+      memQuery = ""; $("mem-search").value = ""; memGo("inbox", "");
+    }));
+    (function walk(p, d){
+      state.folders.filter(function(f){ return eff[f.id] === p; }).sort(byName).forEach(function(f){
+        var open = !!state.memUi.open[f.id];
+        var mine = state.notes.filter(function(n){ return noteFolder(n) === f.id; });
+        box.appendChild(memRow(d, "folder", folderName(f), mine.length, v.type === "folder" && v.id === f.id, open, false, function(){
+          var was = v.type === "folder" && v.id === f.id;
+          state.memUi.open[f.id] = was ? !open : true;
+          memQuery = ""; $("mem-search").value = "";
+          memGo("folder", f.id);
+        }));
+        if (open){
+          walk(f.id, d + 1);
+          mine.sort(byTitle).forEach(function(n){
+            box.appendChild(memRow(d + 1, "doc", noteTitle(n), null, v.type === "note" && v.id === n.id, null, true, function(){ memGo("note", n.id); }));
+          });
+        }
+      });
+    })("", 0);
+    var nn = state.notes.length, nf = state.folders.length;
+    $("mem-count").textContent = nn === 0 && nf === 0 ? "Vide"
+      : nn + (nn > 1 ? " notes" : " note") + (nf ? ", " + nf + (nf > 1 ? " dossiers" : " dossier") : "");
+  }
+
+  function memItem(n, withMove){
+    var li = el("div","mitem");
+    var b = el("button","main"); b.type = "button";
+    b.appendChild(el("span","t", noteTitle(n)));
+    var body = noteBody(n);
+    if (body) b.appendChild(el("span","s", body));
+    b.appendChild(el("span","d", new Date(n.updatedAt || n.at || Date.now()).toLocaleDateString("fr-FR", { day:"numeric", month:"short" })));
+    b.addEventListener("click", function(){ memGo("note", n.id); });
+    li.appendChild(b);
+    if (withMove && state.folders.length){
+      var s = folderSelect("", "Ranger dans…", null);
+      s.setAttribute("aria-label", "Ranger la note « " + noteTitle(n) + " »");
+      s.value = "";
+      s.addEventListener("change", function(){
+        if (!s.value) return;
+        n.folder = s.value; save(); memRender();
+      });
+      li.appendChild(s);
+    }
+    return li;
+  }
+  function memBackBtn(){
+    var b = el("button","link mem-back"); b.type = "button";
+    b.appendChild(ico("back", 16));
+    b.appendChild(document.createTextNode(" Memoria"));
+    b.addEventListener("click", function(){ memFlush(); memMobile = false; memRender(); });
+    return b;
+  }
+
+  function memRenderInbox(main){
+    memEd = null; main.textContent = "";
+    main.appendChild(memBackBtn());
+    main.appendChild(el("p","mem-crumb","Notes à ranger"));
+    var t = el("h2","mem-h","Boîte de réception");
+    main.appendChild(t);
+    var items = state.notes.filter(function(n){ return !noteFolder(n); }).sort(byRecent);
+    if (!items.length){
+      main.appendChild(el("p","empty","Rien à ranger. Ce que tu jettes dans la barre du haut, ou depuis Aujourd'hui, arrive ici."));
+      return;
+    }
+    var list = el("div","mlist");
+    items.forEach(function(n){ list.appendChild(memItem(n, true)); });
+    main.appendChild(list);
+  }
+
+  function memRenderFolder(main, f){
+    memEd = null; main.textContent = "";
+    main.appendChild(memBackBtn());
+    var path = memPath(f.id); path.pop();
+    main.appendChild(el("p","mem-crumb", path.length ? path.join(" › ") : "Dossier"));
+    var name = el("input","mem-title"); name.value = f.name || ""; name.placeholder = "Nom du dossier";
+    name.setAttribute("aria-label", "Nom du dossier");
+    name.addEventListener("input", function(){ var g = folderOf(f.id); if (!g) return; g.name = name.value; memSchedule(); });
+    main.appendChild(name);
+    var row = el("div","mact");
+    var bn = el("button","btn","Nouvelle note ici"); bn.type = "button";
+    bn.addEventListener("click", function(){ memNewNote(f.id); });
+    var bf = el("button","btn ghost","Nouveau sous-dossier"); bf.type = "button";
+    bf.addEventListener("click", function(){ memNewFolder(f.id); });
+    row.appendChild(bn); row.appendChild(bf);
+    main.appendChild(row);
+    var eff = memEff();
+    var mv = el("label","mfield"); mv.appendChild(el("span",null,"Déplacer dans"));
+    var sel = folderSelect(eff[f.id], "Racine", f.id);
+    sel.addEventListener("change", function(){ var g = folderOf(f.id); if (!g) return; g.parent = sel.value; save(); memRender(); });
+    mv.appendChild(sel); main.appendChild(mv);
+    var subs = state.folders.filter(function(g){ return eff[g.id] === f.id; }).sort(byName);
+    var items = state.notes.filter(function(n){ return noteFolder(n) === f.id; }).sort(byRecent);
+    if (!subs.length && !items.length){
+      main.appendChild(el("p","empty","Dossier vide. Crée une note ici, ou range-en depuis la boîte de réception."));
+    } else {
+      var list = el("div","mlist");
+      subs.forEach(function(g){
+        var li = el("div","mitem"), b = el("button","main"); b.type = "button";
+        var tt = el("span","t"); tt.appendChild(ico("folder", 16)); tt.appendChild(document.createTextNode(" " + folderName(g)));
+        b.appendChild(tt);
+        b.addEventListener("click", function(){ memGo("folder", g.id); });
+        li.appendChild(b); list.appendChild(li);
+      });
+      items.forEach(function(n){ list.appendChild(memItem(n, false)); });
+      main.appendChild(list);
+    }
+    var del = twoStep("Supprimer le dossier", "Confirmer la suppression", function(){
+      memFlush();
+      var parent = eff[f.id] || "";
+      state.folders.forEach(function(g){ if (eff[g.id] === f.id) g.parent = parent; });
+      state.notes.forEach(function(n){ if (noteFolder(n) === f.id) n.folder = parent; });
+      state.folders = state.folders.filter(function(g){ return g.id !== f.id; });
+      memGo(parent ? "folder" : "inbox", parent);
+    });
+    var wrap = el("div","mfoot"); wrap.appendChild(del);
+    wrap.appendChild(el("span","sub","Les notes et sous-dossiers remontent d'un niveau, rien n'est perdu."));
+    main.appendChild(wrap);
+    if (memFocus === "folder"){ memFocus = ""; name.focus(); name.select(); }
+  }
+
+  function memChip(label, cls, onClick){
+    var b = el("button","mchip " + cls); b.type = "button"; b.textContent = label;
+    b.addEventListener("click", onClick);
+    return b;
+  }
+  function memRenderLinks(){
+    if (!memEd) return;
+    var n = noteOf(memEd.id), box = memEd.linksEl;
+    if (!n) return;
+    box.textContent = "";
+    var idx = titleIndex(), seen = {}, any = false;
+    var outs = linksIn(n.text).filter(function(l){ var k = memNorm(l.target); if (seen[k]) return false; seen[k] = 1; return true; });
+    if (outs.length){
+      any = true;
+      box.appendChild(el("h3","msec","Liens dans cette note"));
+      var row = el("div","mlinks");
+      outs.forEach(function(l){
+        var t = idx[memNorm(l.target)];
+        if (t) row.appendChild(memChip(l.target, "", function(){ memGo("note", t.id); }));
+        else row.appendChild(memChip("Créer « " + l.target + " »", "new", function(){ memNewNote(noteFolder(n), l.target); }));
+      });
+      box.appendChild(row);
+    }
+    var sug = suggestions(n, idx);
+    if (sug.length){
+      any = true;
+      box.appendChild(el("h3","msec","Relier à une note existante ?"));
+      var r2 = el("div","mlinks");
+      sug.forEach(function(s){
+        r2.appendChild(memChip("Lier « " + s.word + " »", "sug", function(){
+          var cur = noteOf(memEd.id); if (!cur) return;
+          var t = cur.text || "";
+          cur.text = t.slice(0, s.pos) + "[[" + s.word + "]]" + t.slice(s.end);
+          memEd.syncFields(cur); memSchedule(); memRenderLinks();
+        }));
+      });
+      box.appendChild(r2);
+    }
+    var back = backlinks(n, idx);
+    if (back.length){
+      any = true;
+      box.appendChild(el("h3","msec","Mentionnée dans"));
+      var r3 = el("div","mlinks");
+      back.forEach(function(o){ r3.appendChild(memChip(noteTitle(o), "", function(){ memGo("note", o.id); })); });
+      box.appendChild(r3);
+    }
+    box.hidden = !any;
+  }
+
+  function memRenderNote(main, n){
+    if (memEd && memEd.id === n.id && main.contains(memEd.titleEl) && main.contains(document.activeElement)){
+      memRenderLinks();
+      return;
+    }
+    main.textContent = "";
+    main.appendChild(memBackBtn());
+    var path = memPath(noteFolder(n));
+    main.appendChild(el("p","mem-crumb", path.length ? path.join(" › ") : "Boîte de réception"));
+    var title = el("input","mem-title"); title.placeholder = "Titre";
+    title.setAttribute("aria-label", "Titre de la note");
+    var body = el("textarea","mem-body"); body.placeholder = "Écris ici. Entoure le titre d'une autre note de [[ ]] pour la relier.";
+    body.setAttribute("aria-label", "Texte de la note");
+    function fill(x){
+      var ls = String(x.text || "").split("\n");
+      title.value = ls[0] || ""; body.value = ls.slice(1).join("\n");
+    }
+    fill(n);
+    function onInput(){
+      var cur = noteOf(n.id); if (!cur) return;
+      var t = title.value.replace(/\n/g, " ");
+      cur.text = body.value ? t + "\n" + body.value : t;
+      memSchedule(); memRenderLinks();
+    }
+    title.addEventListener("input", onInput);
+    body.addEventListener("input", onInput);
+    title.addEventListener("keydown", function(e){ if (e.key === "Enter"){ e.preventDefault(); body.focus(); } });
+    main.appendChild(title); main.appendChild(body);
+    var linksEl = el("div","mlinksbox"); main.appendChild(linksEl);
+    var fld = el("label","mfield"); fld.appendChild(el("span",null,"Dossier"));
+    var sel = folderSelect(noteFolder(n), "Boîte de réception", null);
+    sel.addEventListener("change", function(){ var cur = noteOf(n.id); if (!cur) return; memFlush(); cur.folder = sel.value; save(); memRender(); });
+    fld.appendChild(sel); main.appendChild(fld);
+    var del = twoStep("Supprimer la note", "Confirmer la suppression", function(){
+      memFlush();
+      var f = noteFolder(n);
+      state.notes = state.notes.filter(function(x){ return x.id !== n.id; });
+      memGo(f ? "folder" : "inbox", f);
+    });
+    var foot = el("div","mfoot"); foot.appendChild(del); main.appendChild(foot);
+    memEd = { id:n.id, titleEl:title, bodyEl:body, linksEl:linksEl, syncFields:fill };
+    memRenderLinks();
+    if (memFocus === "title"){ memFocus = ""; title.focus(); }
+  }
+
+  function memRenderSearch(main){
+    memEd = null; main.textContent = "";
+    main.appendChild(memBackBtn());
+    var q = memQuery.trim(), qn = memNorm(q);
+    main.appendChild(el("p","mem-crumb","Recherche"));
+    main.appendChild(el("h2","mem-h","« " + q + " »"));
+    var fs = state.folders.filter(function(f){ return memNorm(folderName(f)).indexOf(qn) !== -1; }).sort(byName);
+    var ns = state.notes.filter(function(n){ return memNorm(n.text).indexOf(qn) !== -1; }).sort(byRecent);
+    if (!fs.length && !ns.length){
+      main.appendChild(el("p","empty","Aucun résultat. Essaie un autre mot."));
+      return;
+    }
+    var list = el("div","mlist");
+    fs.forEach(function(g){
+      var li = el("div","mitem"), b = el("button","main"); b.type = "button";
+      var tt = el("span","t"); tt.appendChild(ico("folder", 16)); tt.appendChild(document.createTextNode(" " + folderName(g)));
+      b.appendChild(tt);
+      b.addEventListener("click", function(){ memGo("folder", g.id); });
+      li.appendChild(b); list.appendChild(li);
+    });
+    ns.forEach(function(n){
+      var li = el("div","mitem"), b = el("button","main"); b.type = "button";
+      b.appendChild(el("span","t", noteTitle(n)));
+      var tx = String(n.text || "").replace(/\s+/g, " "), i = tx.toLowerCase().indexOf(q.toLowerCase());
+      var snip = i === -1 ? noteBody(n) : (i > 40 ? "…" : "") + tx.slice(Math.max(0, i - 40), i + q.length + 80);
+      if (snip) b.appendChild(el("span","s", snip));
+      b.addEventListener("click", function(){ memGo("note", n.id); });
+      li.appendChild(b); list.appendChild(li);
+    });
+    main.appendChild(list);
+  }
+
+  function memRender(){
+    if (!state.memUi) state.memUi = { open:{}, view:{ type:"inbox", id:"" } };
+    if (!state.memUi.open) state.memUi.open = {};
+    var v = memView();
+    if (v.type === "note" && !noteOf(v.id)) state.memUi.view = v = { type:"inbox", id:"" };
+    if (v.type === "folder" && !folderOf(v.id)) state.memUi.view = v = { type:"inbox", id:"" };
+    if (v.type === "search" && !memQuery.trim()) state.memUi.view = v = { type:"inbox", id:"" };
+    $("mem").setAttribute("data-main", memMobile ? "1" : "0");
+    memRenderSide();
+    var main = $("mem-main");
+    if (v.type === "search") memRenderSearch(main);
+    else if (v.type === "note") memRenderNote(main, noteOf(v.id));
+    else if (v.type === "folder") memRenderFolder(main, folderOf(v.id));
+    else memRenderInbox(main);
+  }
+  function renderNotes(){ memRender(); }
 
   // ---------- calendrier Google ----------
   var accessToken = null;
@@ -1408,11 +1898,11 @@ dialog::backdrop{background:rgba(8,9,10,.5)}
       Object.keys(t).forEach(function(id){ if (t[id] > cut) tomb[id] = Math.max(tomb[id] || 0, t[id]); });
     });
     return { v:1, tasks: mergeColl("tasks", L.tasks, R.tasks, tomb), habits: mergeColl("habits", L.habits, R.habits, tomb),
-             notes: mergeColl("notes", L.notes, R.notes, tomb), tomb: tomb };
+             notes: mergeColl("notes", L.notes, R.notes, tomb), folders: mergeColl("folders", L.folders, R.folders, tomb), tomb: tomb };
   }
-  function dataOf(st){ return { v:1, tasks: st.tasks, habits: st.habits, notes: st.notes, tomb: st.tomb }; }
+  function dataOf(st){ return { v:1, tasks: st.tasks, habits: st.habits, notes: st.notes, folders: st.folders, tomb: st.tomb }; }
   function same(a, b){
-    return JSON.stringify([a.tasks, a.habits, a.notes, a.tomb]) === JSON.stringify([b.tasks, b.habits, b.notes, b.tomb]);
+    return JSON.stringify([a.tasks, a.habits, a.notes, a.folders, a.tomb]) === JSON.stringify([b.tasks, b.habits, b.notes, b.folders, b.tomb]);
   }
 
   function setSyncStatus(msg, kind){
@@ -1470,7 +1960,7 @@ dialog::backdrop{background:rgba(8,9,10,.5)}
   }
 
   function applyMerged(m){
-    state.tasks = m.tasks; state.habits = m.habits; state.notes = m.notes;
+    state.tasks = m.tasks; state.habits = m.habits; state.notes = m.notes; state.folders = m.folders;
     sync.tomb = m.tomb;
     baselineSig();
     if (!memoryOnly){ try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch(e){ memoryOnly = true; } }
@@ -1539,9 +2029,10 @@ dialog::backdrop{background:rgba(8,9,10,.5)}
     var pull = useGh ? ghPull : drivePull, push = useGh ? ghPush : drivePush;
     return pull().then(function(remote){
       // l'état local est relu après le téléchargement : une modif faite pendant l'attente n'est jamais perdue
-      var local = dataOf({ tasks: state.tasks, habits: state.habits, notes: state.notes, tomb: sync.tomb });
+      memFlush();
+      var local = dataOf({ tasks: state.tasks, habits: state.habits, notes: state.notes, folders: state.folders, tomb: sync.tomb });
       if (!remote) return push(local);
-      remote = { tasks: remote.tasks || [], habits: remote.habits || [], notes: remote.notes || [], tomb: remote.tomb || {} };
+      remote = { tasks: remote.tasks || [], habits: remote.habits || [], notes: remote.notes || [], folders: remote.folders || [], tomb: remote.tomb || {} };
       var merged = mergeData(local, remote);
       if (!same(merged, local)) applyMerged(merged);
       if (!same(merged, remote)) return push(merged);
@@ -1620,6 +2111,36 @@ dialog::backdrop{background:rgba(8,9,10,.5)}
     state.tasks.push({ id:"t"+Date.now(), title:v, due:"", done:false });
     i.value = "";
     save(); renderTasks();
+  });
+
+
+  $("mem-capture").addEventListener("submit", function(e){
+    e.preventDefault();
+    var i = $("mem-cap"), v = i.value.trim();
+    if (!v){ i.focus(); return; }
+    memFlush();
+    state.notes.push({ id:uid("n"), text:v, folder:"", at:Date.now() });
+    i.value = "";
+    save(); memRender();
+    flash($("mem-flash"));
+  });
+  $("mem-search").addEventListener("input", function(){
+    memQuery = this.value;
+    memFlush();
+    if (memQuery.trim()){ state.memUi.view = { type:"search", id:"" }; memMobile = true; }
+    else if (memView().type === "search"){ state.memUi.view = { type:"inbox", id:"" }; }
+    memRender();
+  });
+  $("mem-search").addEventListener("keydown", function(e){
+    if (e.key === "Escape"){ this.value = ""; this.dispatchEvent(new Event("input")); }
+  });
+  $("mem-newnote").addEventListener("click", function(){
+    var v = memView(), f = v.type === "folder" ? v.id : v.type === "note" && noteOf(v.id) ? noteFolder(noteOf(v.id)) : "";
+    memNewNote(f);
+  });
+  $("mem-newfolder").addEventListener("click", function(){
+    var v = memView();
+    memNewFolder(v.type === "folder" ? v.id : "");
   });
 
   $("note-save").addEventListener("click", function(){
