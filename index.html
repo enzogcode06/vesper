@@ -664,10 +664,17 @@ textarea{width:100%; resize:vertical; background:var(--raised); border:1px solid
             else if (autoMode){ autoMode = false; renderAgendaEntry(); }
             else { agendaState("La connexion a été refusée ou annulée.", "Réessayer", connectCalendar); }
           },
-          error_callback: function(){
+          error_callback: function(err){
             requesting = false;
             if (autoMode){ autoMode = false; renderAgendaEntry(); return; }
-            agendaState("La connexion n'a pas abouti. Vérifie l'identifiant client et l'origine autorisée dans Google Cloud.", "Ouvrir les réglages", function(){ show($("tab-reglages")); });
+            var t = err && err.type;
+            if (t === "popup_failed_to_open"){
+              agendaState("Le navigateur a bloqu\u00e9 la fen\u00eatre Google. Touche le bouton pour r\u00e9essayer, et autorise les pop-ups pour ce site si besoin.", "R\u00e9essayer", connectCalendar);
+            } else if (t === "popup_closed"){
+              agendaState("La fen\u00eatre Google a \u00e9t\u00e9 ferm\u00e9e avant la fin de la connexion.", "R\u00e9essayer", connectCalendar);
+            } else {
+              agendaState("La connexion n'a pas abouti" + (t ? " (" + t + ")" : "") + ". V\u00e9rifie l'identifiant client et l'origine autoris\u00e9e dans Google Cloud.", "Ouvrir les r\u00e9glages", function(){ show($("tab-reglages")); });
+            }
           }
         });
       }
@@ -974,7 +981,9 @@ textarea{width:100%; resize:vertical; background:var(--raised); border:1px solid
 
     $("gcal-form").addEventListener("submit", function(e){
       e.preventDefault();
-      state.googleClientId = $("gcal-id").value.trim();
+      state.googleClientId = $("gcal-id").value.replace(/[^A-Za-z0-9._-]/g, "");
+      $("gcal-id").value = state.googleClientId;
+      if (state.googleClientId) loadGsi(function(){}, true);
       tokenClient = null;
       accessToken = null;
       save();
@@ -1004,7 +1013,7 @@ textarea{width:100%; resize:vertical; background:var(--raised); border:1px solid
   }
   document.addEventListener("click", autoReconnect, true);
   document.addEventListener("keydown", autoReconnect, true);
-  if (state.calLinked && state.googleClientId) loadGsi(function(){}, true);
+  if (state.googleClientId) loadGsi(function(){}, true);
 
   // ---------- branchements ----------
   $("cal-prev").addEventListener("click", function(){ calGo(-1); });
