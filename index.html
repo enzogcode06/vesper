@@ -215,7 +215,24 @@ dialog::backdrop{background:rgba(8,9,10,.5)}
 .mem-crumb{margin:0; font-size:14px; color:var(--muted)}
 .mem-h{font-size:clamp(30px,5vw,44px); line-height:1.1}
 .mem-title{font-family:var(--serif); font-size:clamp(30px,5vw,44px); line-height:1.1; letter-spacing:-.01em; background:none; border:0; padding:0; width:100%; color:var(--ink)}
-.mem-body{min-height:260px; font-size:17px; line-height:1.65}
+.mem-body{min-height:260px; font-size:17px; line-height:1.65; background:var(--raised); border:1px solid var(--line); border-radius:14px; padding:13px 15px; overflow-wrap:anywhere; position:relative}
+.mem-body.empty::before{content:attr(data-ph); color:var(--muted); position:absolute; pointer-events:none; left:15px; right:15px}
+.mem-body h2{font-family:var(--serif); font-size:30px; font-weight:400; line-height:1.15; margin:.5em 0 .2em}
+.mem-body h3{font-size:19px; font-weight:600; margin:.5em 0 .2em}
+.mem-body ul,.mem-body ol{margin:.3em 0; padding-left:1.4em}
+.mem-body small{font-size:13.5px}
+.mem-body span[style*="background"]{color:#15171A}
+.wl{color:var(--accent); border-bottom:1px solid currentColor; cursor:pointer; padding:0 1px}
+.wl.new{border-bottom-style:dashed}
+.rtbar{display:flex; flex-wrap:wrap; align-items:center; gap:6px}
+.rtb{min-width:40px; min-height:40px; padding:0 12px; border-radius:10px; border:1px solid var(--line); background:var(--panel); font-size:14px; font-weight:500; color:var(--ink)}
+.rtb:hover{border-color:var(--line-strong)}
+.rtb[aria-pressed="true"]{background:var(--ink); color:var(--bg); border-color:var(--ink)}
+.rt-b{font-weight:700}.rt-i{font-style:italic}.rt-u{text-decoration:underline}
+.rt-hl{background:#f5e27a; color:#15171A; border-color:transparent}
+.rtc{min-width:30px; width:30px; min-height:30px; height:30px; padding:0; border-radius:50%}
+.rtc0{background:var(--panel)}
+.rthint{margin-left:6px}
 .mlist{display:flex; flex-direction:column}
 .mitem{display:flex; align-items:center; gap:10px; border-top:1px solid var(--line)}
 .mitem .main{flex:1 1 auto; min-width:0; background:none; border:0; text-align:left; padding:14px 2px; display:flex; flex-direction:column; gap:3px; min-height:56px}
@@ -1078,7 +1095,7 @@ dialog::backdrop{background:rgba(8,9,10,.5)}
     }).sort(byTitle);
   }
   function suggestions(n, idx){
-    var text = n.text || "", ranges = linksIn(text), linked = {}, own = memNorm(noteTitle(n)), out = [], seen = {};
+    var text = String(n.text || "").split("\n").slice(1).join("\n"), ranges = linksIn(text), linked = {}, own = memNorm(noteTitle(n)), out = [], seen = {};
     ranges.forEach(function(l){ var t = idx[memNorm(l.target)]; if (t) linked[t.id] = 1; });
     state.notes.forEach(function(o){
       if (out.length >= 5 || o.id === n.id || linked[o.id]) return;
@@ -1299,6 +1316,255 @@ dialog::backdrop{background:rgba(8,9,10,.5)}
     if (memFocus === "folder"){ memFocus = ""; name.focus(); name.select(); }
   }
 
+  // ---------- éditeur de texte riche ----------
+  var RT_PAL = [["#d64545","Rouge"],["#d9822b","Orange"],["#3e9b5f","Vert"],["#3b7dd8","Bleu"],["#8b5cc9","Violet"]];
+  var RT_OK = { "#d64545":1, "#d9822b":1, "#3e9b5f":1, "#3b7dd8":1, "#8b5cc9":1 };
+  var RT_HL = "#f5e27a";
+  function rtHex(v){
+    v = String(v || "").trim().toLowerCase();
+    var m = /^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/.exec(v);
+    if (m) v = "#" + [m[1], m[2], m[3]].map(function(x){ return ("0" + (+x).toString(16)).slice(-2); }).join("");
+    if (/^#[0-9a-f]{3}$/.test(v)) v = "#" + v[1] + v[1] + v[2] + v[2] + v[3] + v[3];
+    return v;
+  }
+  var RT_TAGS = { B:"b", STRONG:"b", I:"i", EM:"i", U:"u", SMALL:"small", H1:"h2", H2:"h2", H3:"h3", H4:"h3", H5:"h3", H6:"h3",
+                  P:"div", DIV:"div", UL:"ul", OL:"ol", LI:"li", BR:"br" };
+  var RT_DROP = { SCRIPT:1, STYLE:1, IFRAME:1, OBJECT:1, EMBED:1, TEMPLATE:1, NOSCRIPT:1, SVG:1 };
+  function rtClean(root){
+    var box = document.createElement("div");
+    function walk(src, dst){
+      for (var c = src.firstChild; c; c = c.nextSibling){
+        if (c.nodeType === 3){ dst.appendChild(document.createTextNode(c.nodeValue)); continue; }
+        if (c.nodeType !== 1) continue;
+        var tag = c.tagName.toUpperCase();
+        if (RT_DROP[tag]) continue;
+        if (tag === "SPAN" && c.classList && c.classList.contains("wl")){
+          var t = c.getAttribute("data-t") || c.textContent;
+          var sp = document.createElement("span");
+          sp.className = "wl"; sp.setAttribute("data-t", t); sp.setAttribute("contenteditable", "false");
+          sp.textContent = c.textContent || t;
+          dst.appendChild(sp);
+          continue;
+        }
+        var base = RT_TAGS[tag] || null, deco = {}, color = "", bg = "", st = c.style || {};
+        if (st.fontWeight && (st.fontWeight === "bold" || +st.fontWeight >= 600)) deco.b = 1;
+        if (st.fontStyle === "italic") deco.i = 1;
+        if (((st.textDecoration || "") + " " + (st.textDecorationLine || "")).indexOf("underline") !== -1) deco.u = 1;
+        var hc = rtHex(st.color); if (RT_OK[hc]) color = hc;
+        if (tag === "FONT"){ var fc = rtHex(c.getAttribute("color")); if (RT_OK[fc]) color = fc; if (+c.getAttribute("size") && +c.getAttribute("size") <= 2) deco.small = 1; }
+        var hb = rtHex(st.backgroundColor); if (hb === RT_HL) bg = hb;
+        if (/^(small|smaller|x-small|xx-small)$/.test(st.fontSize || "")) deco.small = 1;
+        var chain = [];
+        if (base) chain.push(document.createElement(base));
+        if (base !== "b" && deco.b) chain.push(document.createElement("b"));
+        if (base !== "i" && deco.i) chain.push(document.createElement("i"));
+        if (base !== "u" && deco.u) chain.push(document.createElement("u"));
+        if (base !== "small" && deco.small) chain.push(document.createElement("small"));
+        if (color || bg){
+          var s2 = document.createElement("span");
+          s2.style.cssText = (color ? "color:" + color + ";" : "") + (bg ? "background-color:" + bg + ";" : "");
+          chain.push(s2);
+        }
+        if (!chain.length){ walk(c, dst); continue; }
+        for (var i = 0; i < chain.length; i++) (i ? chain[i - 1] : dst).appendChild(chain[i]);
+        if (base !== "br") walk(c, chain[chain.length - 1]);
+      }
+    }
+    walk(root, box);
+    return box;
+  }
+  function rtPlain(root){
+    var out = "";
+    function nl(){ if (out && !/\n$/.test(out)) out += "\n"; }
+    function walk(n, list, idx){
+      if (n.nodeType === 3){ out += n.nodeValue; return; }
+      if (n.nodeType !== 1) return;
+      var t = n.tagName;
+      if (t === "BR"){ out += "\n"; return; }
+      if (n.classList && n.classList.contains("wl")){
+        var tg = n.getAttribute("data-t") || n.textContent, lb = n.textContent;
+        out += "[[" + tg + (lb && lb !== tg ? "|" + lb : "") + "]]";
+        return;
+      }
+      var block = t === "DIV" || t === "H2" || t === "H3" || t === "UL" || t === "OL" || t === "LI";
+      if (block) nl();
+      if (t === "LI") out += list === "OL" ? idx + ". " : "- ";
+      var k = 0;
+      for (var c = n.firstChild; c; c = c.nextSibling){
+        if (t === "UL" || t === "OL"){ if (c.nodeType === 1 && c.tagName === "LI") k++; walk(c, t, k); }
+        else walk(c, list, idx);
+      }
+      if (block) nl();
+    }
+    walk(root, "", 0);
+    return out.replace(/\n+$/, "");
+  }
+  function memLinkify(root){
+    var nodes = [], w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null), x;
+    while ((x = w.nextNode())){
+      if (x.parentNode.closest && x.parentNode.closest(".wl")) continue;
+      if (x.nodeValue.indexOf("[[") !== -1) nodes.push(x);
+    }
+    nodes.forEach(function(tn){
+      var re = new RegExp(LINK_SRC, "g"), s = tn.nodeValue, last = 0, m, frag = document.createDocumentFragment(), hit = false;
+      while ((m = re.exec(s))){
+        hit = true;
+        if (m.index > last) frag.appendChild(document.createTextNode(s.slice(last, m.index)));
+        var sp = document.createElement("span");
+        sp.className = "wl"; sp.setAttribute("data-t", m[1].trim()); sp.setAttribute("contenteditable", "false");
+        sp.textContent = (m[2] || "").trim() || m[1].trim();
+        frag.appendChild(sp);
+        last = m.index + m[0].length;
+      }
+      if (!hit) return;
+      if (last < s.length) frag.appendChild(document.createTextNode(s.slice(last)));
+      tn.parentNode.replaceChild(frag, tn);
+    });
+  }
+  function memWrapWord(root, word){
+    var re = new RegExp("(^|[^\\p{L}\\p{N}])(" + word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + ")(?![\\p{L}\\p{N}])", "iu");
+    var w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null), x;
+    while ((x = w.nextNode())){
+      if (x.parentNode.closest && x.parentNode.closest(".wl")) continue;
+      var m = re.exec(x.nodeValue);
+      if (!m) continue;
+      var pos = m.index + m[1].length, s = x.nodeValue;
+      var sp = document.createElement("span");
+      sp.className = "wl"; sp.setAttribute("data-t", m[2]); sp.setAttribute("contenteditable", "false"); sp.textContent = m[2];
+      var frag = document.createDocumentFragment();
+      if (pos) frag.appendChild(document.createTextNode(s.slice(0, pos)));
+      frag.appendChild(sp);
+      var rest = s.slice(pos + m[2].length);
+      if (rest) frag.appendChild(document.createTextNode(rest));
+      x.parentNode.replaceChild(frag, x);
+      return true;
+    }
+    return false;
+  }
+  function rtLoad(ed, html, bodyText){
+    var use = false, box;
+    if (typeof html === "string"){
+      var doc = new DOMParser().parseFromString("<body>" + html + "</body>", "text/html");
+      box = rtClean(doc.body);
+      if (rtPlain(box).trim() === String(bodyText || "").trim()) use = true;
+    }
+    if (!use){
+      box = document.createElement("div");
+      String(bodyText || "").split("\n").forEach(function(line){
+        var d = document.createElement("div");
+        if (line) d.textContent = line; else d.appendChild(document.createElement("br"));
+        box.appendChild(d);
+      });
+    }
+    ed.innerHTML = box.innerHTML;
+    memLinkify(ed);
+    ed.classList.toggle("empty", !rtPlain(rtClean(ed)).trim());
+  }
+  function rtOffsets(ed){
+    var s = window.getSelection();
+    if (!s.rangeCount || !ed.contains(s.anchorNode)) return null;
+    var r = s.getRangeAt(0), pre = document.createRange();
+    pre.selectNodeContents(ed);
+    pre.setEnd(r.startContainer, r.startOffset); var a = pre.toString().length;
+    pre.setEnd(r.endContainer, r.endOffset);
+    return { a:a, b:pre.toString().length };
+  }
+  function rtRestore(ed, o){
+    if (!o) return;
+    function pos(off){
+      var w = document.createTreeWalker(ed, NodeFilter.SHOW_TEXT, null), n, acc = 0, last = null;
+      while ((n = w.nextNode())){
+        var len = n.nodeValue.length;
+        if (acc + len >= off) return [n, off - acc];
+        acc += len; last = n;
+      }
+      return last ? [last, last.nodeValue.length] : [ed, 0];
+    }
+    var s = window.getSelection(), r = document.createRange(), p1 = pos(o.a), p2 = pos(o.b);
+    r.setStart(p1[0], p1[1]); r.setEnd(p2[0], p2[1]);
+    s.removeAllRanges(); s.addRange(r);
+  }
+  function rtExec(cmd, val){ try{ document.execCommand(cmd, false, val); }catch(e){} }
+  function rtState(){
+    if (!memEd || !memEd.bar) return;
+    ["bold","italic","underline"].forEach(function(c){
+      var b = memEd.bar.querySelector('[data-cmd="' + c + '"]');
+      if (!b) return;
+      var on = false;
+      try{ on = document.queryCommandState(c) && memEd.bodyEl.contains(window.getSelection().anchorNode); }catch(e){}
+      b.setAttribute("aria-pressed", on ? "true" : "false");
+    });
+  }
+  document.addEventListener("selectionchange", rtState);
+  function memLinkSelection(ed, note){
+    var sel = window.getSelection(), raw = sel.toString();
+    if (!sel.rangeCount || sel.isCollapsed || !ed.contains(sel.getRangeAt(0).commonAncestorContainer) || /\n/.test(raw) || /[\[\]|]/.test(raw) || !raw.trim()){
+      note.textContent = "Sélectionne d'abord un mot, sur une seule ligne.";
+      setTimeout(function(){ note.textContent = ""; }, 3000);
+      return false;
+    }
+    var r = sel.getRangeAt(0), txt = raw.replace(/\s+/g, " ").trim();
+    var sp = document.createElement("span");
+    sp.className = "wl"; sp.setAttribute("data-t", txt); sp.setAttribute("contenteditable", "false"); sp.textContent = txt;
+    r.deleteContents(); r.insertNode(sp);
+    var nr = document.createRange(); nr.setStartAfter(sp); nr.collapse(true);
+    sel.removeAllRanges(); sel.addRange(nr);
+    return true;
+  }
+  function rtToolbar(ed, onChange){
+    var bar = el("div","rtbar");
+    bar.setAttribute("role", "toolbar"); bar.setAttribute("aria-label", "Mise en forme");
+    bar.addEventListener("mousedown", function(e){ e.preventDefault(); });
+    var hint = el("span","sub rthint"); hint.setAttribute("aria-live", "polite");
+    function btn(label, aria, cls, fn, cmd, raw){
+      var b = el("button", "rtb " + (cls || ""), label);
+      b.type = "button"; b.setAttribute("aria-label", aria); b.title = aria;
+      if (cmd){ b.setAttribute("data-cmd", cmd); b.setAttribute("aria-pressed", "false"); }
+      b.addEventListener("click", function(){
+        ed.focus();
+        var o = raw ? null : rtOffsets(ed);
+        fn();
+        var n = o ? rtOffsets(ed) : null;
+        if (o && (!n || n.a !== o.a || n.b !== o.b)) rtRestore(ed, o);
+        onChange(); rtState();
+      });
+      bar.appendChild(b);
+      return b;
+    }
+    btn("B", "Gras", "rt-b", function(){ rtExec("bold"); }, "bold");
+    btn("I", "Italique", "rt-i", function(){ rtExec("italic"); }, "italic");
+    btn("U", "Souligné", "rt-u", function(){ rtExec("underline"); }, "underline");
+    btn("ab", "Surligner", "rt-hl", function(){
+      var cur = ""; try{ cur = rtHex(document.queryCommandValue("hiliteColor")); }catch(e){}
+      rtExec("hiliteColor", cur === RT_HL ? "transparent" : RT_HL);
+    });
+    btn("Titre", "Grand titre", "", function(){ rtExec("formatBlock", "H2"); });
+    btn("Sous-titre", "Sous-titre", "", function(){ rtExec("formatBlock", "H3"); });
+    btn("Texte", "Texte normal", "", function(){ rtExec("formatBlock", "DIV"); rtExec("fontSize", "3"); });
+    btn("Petit", "Petit texte", "", function(){ rtExec("fontSize", "2"); });
+    btn("• Liste", "Liste à puces", "", function(){ rtExec("insertUnorderedList"); });
+    btn("1. Liste", "Liste numérotée", "", function(){ rtExec("insertOrderedList"); });
+    RT_PAL.forEach(function(c){
+      var b = btn("", "Couleur " + c[1].toLowerCase(), "rtc", function(){ rtExec("foreColor", c[0]); });
+      b.style.background = c[0];
+    });
+    btn("×", "Couleur par défaut", "rtc rtc0", function(){ rtExec("foreColor", "#010101"); });
+    btn("Relier", "Relier le texte sélectionné à une note", "", function(){ memLinkSelection(ed, hint); }, null, true);
+    btn("Effacer", "Effacer la mise en forme", "", function(){ rtExec("removeFormat"); rtExec("formatBlock", "DIV"); });
+    bar.appendChild(hint);
+    return bar;
+  }
+  function memCommit(quiet){
+    if (!memEd) return;
+    var cur = noteOf(memEd.id); if (!cur) return;
+    var box = rtClean(memEd.bodyEl), plain = rtPlain(box), t = memEd.titleEl.value.replace(/\n/g, " ");
+    cur.html = box.innerHTML;
+    cur.text = plain.trim() ? t + "\n" + plain : t;
+    memEd.bodyEl.classList.toggle("empty", !plain.trim());
+    memSchedule();
+    if (!quiet) memRenderLinks();
+  }
+
   function memChip(label, cls, onClick){
     var b = el("button","mchip " + cls); b.type = "button"; b.textContent = label;
     b.addEventListener("click", onClick);
@@ -1329,10 +1595,8 @@ dialog::backdrop{background:rgba(8,9,10,.5)}
       var r2 = el("div","mlinks");
       sug.forEach(function(s){
         r2.appendChild(memChip("Lier « " + s.word + " »", "sug", function(){
-          var cur = noteOf(memEd.id); if (!cur) return;
-          var t = cur.text || "";
-          cur.text = t.slice(0, s.pos) + "[[" + s.word + "]]" + t.slice(s.end);
-          memEd.syncFields(cur); memSchedule(); memRenderLinks();
+          if (!memEd) return;
+          memWrapWord(memEd.bodyEl, s.word); memCommit();
         }));
       });
       box.appendChild(r2);
@@ -1346,6 +1610,10 @@ dialog::backdrop{background:rgba(8,9,10,.5)}
       box.appendChild(r3);
     }
     box.hidden = !any;
+    Array.prototype.forEach.call(memEd.bodyEl.querySelectorAll(".wl"), function(w){
+      var tg = w.getAttribute("data-t") || w.textContent;
+      w.classList.toggle("new", !idx[memNorm(tg)]);
+    });
   }
 
   function memRenderNote(main, n){
@@ -1359,23 +1627,35 @@ dialog::backdrop{background:rgba(8,9,10,.5)}
     main.appendChild(el("p","mem-crumb", path.length ? path.join(" › ") : "Boîte de réception"));
     var title = el("input","mem-title"); title.placeholder = "Titre";
     title.setAttribute("aria-label", "Titre de la note");
-    var body = el("textarea","mem-body"); body.placeholder = "Écris ici. Entoure le titre d'une autre note de [[ ]] pour la relier.";
+    var body = el("div","mem-body");
+    body.contentEditable = "true"; body.setAttribute("role", "textbox"); body.setAttribute("aria-multiline", "true");
     body.setAttribute("aria-label", "Texte de la note");
-    function fill(x){
-      var ls = String(x.text || "").split("\n");
-      title.value = ls[0] || ""; body.value = ls.slice(1).join("\n");
-    }
-    fill(n);
-    function onInput(){
-      var cur = noteOf(n.id); if (!cur) return;
-      var t = title.value.replace(/\n/g, " ");
-      cur.text = body.value ? t + "\n" + body.value : t;
-      memSchedule(); memRenderLinks();
-    }
-    title.addEventListener("input", onInput);
-    body.addEventListener("input", onInput);
+    body.setAttribute("data-ph", "Écris ici. Sélectionne un mot et touche Relier pour le lier à une autre note.");
+    var ls = String(n.text || "").split("\n");
+    title.value = ls[0] || "";
+    rtLoad(body, n.html, ls.slice(1).join("\n"));
+    title.addEventListener("input", function(){ memCommit(); });
     title.addEventListener("keydown", function(e){ if (e.key === "Enter"){ e.preventDefault(); body.focus(); } });
-    main.appendChild(title); main.appendChild(body);
+    body.addEventListener("input", function(){ memCommit(); });
+    body.addEventListener("focus", function(){ rtExec("defaultParagraphSeparator", "div"); rtExec("styleWithCSS", false); });
+    body.addEventListener("blur", function(){
+      if (!memEd || memEd.bodyEl !== body || !document.body.contains(body)) return;
+      memLinkify(body); memCommit(true);
+    });
+    body.addEventListener("paste", function(e){
+      e.preventDefault();
+      var t = (e.clipboardData || window.clipboardData).getData("text/plain");
+      rtExec("insertText", t);
+    });
+    body.addEventListener("click", function(e){
+      var w = e.target.closest && e.target.closest(".wl");
+      if (!w) return;
+      var cur = noteOf(n.id), target = w.getAttribute("data-t") || w.textContent, hit = titleIndex()[memNorm(target)];
+      if (hit) memGo("note", hit.id);
+      else memNewNote(cur ? noteFolder(cur) : "", target);
+    });
+    var bar = rtToolbar(body, memCommit);
+    main.appendChild(title); main.appendChild(bar); main.appendChild(body);
     var linksEl = el("div","mlinksbox"); main.appendChild(linksEl);
     var fld = el("label","mfield"); fld.appendChild(el("span",null,"Dossier"));
     var sel = folderSelect(noteFolder(n), "Boîte de réception", null);
@@ -1388,7 +1668,7 @@ dialog::backdrop{background:rgba(8,9,10,.5)}
       memGo(f ? "folder" : "inbox", f);
     });
     var foot = el("div","mfoot"); foot.appendChild(del); main.appendChild(foot);
-    memEd = { id:n.id, titleEl:title, bodyEl:body, linksEl:linksEl, syncFields:fill };
+    memEd = { id:n.id, titleEl:title, bodyEl:body, linksEl:linksEl, bar:bar };
     memRenderLinks();
     if (memFocus === "title"){ memFocus = ""; title.focus(); }
   }
