@@ -270,6 +270,89 @@ dialog::backdrop{background:rgba(8,9,10,.5)}
 .mimp[hidden]{display:none}
 .mimp .mact{margin-top:2px}
 #view-notes.mdrop .mem{outline:2px dashed var(--accent); outline-offset:6px; border-radius:14px}
+
+/* onglets Life Center, Finance, Santé, Bureau */
+.xcard>.xchip,.xcard>.btn{align-self:flex-start}
+.xroot{display:flex; flex-direction:column; gap:44px}
+.xsec{display:flex; flex-direction:column; gap:16px}
+.xsec>.rowhead h2{font-size:30px}
+.xgrid{display:grid; grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr)); gap:16px}
+.xcard{background:var(--panel); border:1px solid var(--line); border-radius:20px; padding:20px 22px; display:flex; flex-direction:column; gap:12px; min-width:0}
+.xhead{display:flex; align-items:flex-start; justify-content:space-between; gap:12px}
+.xtt{display:flex; flex-direction:column; gap:6px; min-width:0}
+.xname{margin:0; font-family:var(--serif); font-weight:400; font-size:24px; line-height:1.15; overflow-wrap:anywhere}
+h4.xname{font-family:var(--sans); font-size:16px; font-weight:600; line-height:1.3}
+.xname2{font-size:16px; font-weight:500; overflow-wrap:anywhere}
+.xnum{font-family:var(--serif); font-size:28px; line-height:1; font-variant-numeric:tabular-nums}
+.xnum.big{font-size:40px}
+.xnum.neg{color:#d64545}
+.xchip{display:inline-block; font-size:12.5px; font-weight:600; padding:3px 10px; border-radius:999px; background:var(--raised); border:1px solid var(--line); color:var(--muted)}
+.xlate{color:#d64545; font-weight:600}
+.xbar{height:8px; border-radius:999px; background:var(--dot-off); overflow:hidden}
+.xbar span{display:block; height:100%; border-radius:999px; background:var(--accent); transition:width .25s}
+.xbar span.over{background:#d64545}
+.xsteps{list-style:none; margin:0; padding:0}
+.xsteps li{display:flex; align-items:center; gap:4px; border-top:1px solid var(--line)}
+.xsteps .tkbtn{min-height:48px; padding:6px 0}
+.xsteps .tklab{font-size:15.5px}
+.xform{display:flex; flex-direction:column; gap:10px}
+.xform input,.xform select,.xform textarea,.xadd input,.xcard textarea,.xmini{min-height:46px; background:var(--raised); border:1px solid var(--line); border-radius:12px; padding:0 14px; min-width:0}
+.xform textarea,.xcard textarea{padding:11px 14px; min-height:0; width:100%; font-size:15px}
+.xform select,.xcard select{padding:0 10px}
+.xrow{display:flex; flex-wrap:wrap; gap:10px; align-items:stretch}
+.xrow>input,.xrow>select{flex:1 1 130px}
+.xrow>.btn{flex:0 0 auto}
+.xadd{display:flex; gap:8px; flex-wrap:wrap}
+.xadd input{flex:1 1 150px}
+.xadd .btn{min-height:46px}
+.xmini{width:96px; min-height:40px; text-align:right}
+.xline{display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; min-height:44px}
+.xdone{border-top:1px solid var(--line); padding-top:10px}
+.xdone summary{cursor:pointer; font-size:15px; font-weight:500; min-height:44px; display:flex; align-items:center}
+.xdone .xline{border-top:1px solid var(--line); padding:6px 0}
+.xhab{display:grid; grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr)); gap:16px}
+.xstrip{display:grid; grid-template-columns:repeat(30,1fr); gap:3px}
+.xstrip span{height:22px; border-radius:4px; background:var(--dot-off)}
+.xstrip span.on{background:var(--accent)}
+.xnav{display:flex; align-items:center; justify-content:space-between; gap:14px}
+.xnav .btn{min-width:46px; padding:0 16px; font-size:20px}
+.xnav h2{flex:1; text-align:center}
+.xsum{display:grid; grid-template-columns:repeat(auto-fit,minmax(min(200px,100%),1fr)); gap:16px}
+.xk{gap:6px}
+.xseg{display:inline-flex; border:1px solid var(--line-strong); border-radius:999px; padding:3px; gap:2px; flex:0 0 auto}
+.xseg button{border:0; background:none; min-height:40px; padding:0 18px; border-radius:999px; font-weight:600; color:var(--muted)}
+.xseg button[aria-pressed="true"]{background:var(--ink); color:var(--bg)}
+.xbud{display:flex; flex-direction:column; gap:8px; padding:12px 0; border-top:1px solid var(--line)}
+.xtx{list-style:none; margin:0; padding:0}
+.xtx li{display:flex; align-items:center; gap:10px; border-top:1px solid var(--line); padding:8px 0; min-height:56px}
+.xtx .xl{flex:1 1 auto; min-width:0; display:flex; flex-direction:column; gap:2px}
+.xtx .kill{opacity:1}
+.xamt{font-variant-numeric:tabular-nums; font-weight:600; white-space:nowrap}
+.xamt.pos{color:#3e9b5f}
+.xchart{display:flex; align-items:flex-end; gap:10px; height:150px; padding-top:8px}
+.xcol{flex:1 1 0; min-width:0; display:flex; flex-direction:column; align-items:center; gap:6px; height:100%; justify-content:flex-end}
+.xpair{width:100%; flex:1 1 auto; display:flex; align-items:flex-end; justify-content:center; gap:4px; min-height:0}
+.xpair span{flex:1 1 0; max-width:22px; border-radius:5px 5px 0 0; min-height:2px}
+.xpair .r,.xdot.r{background:var(--accent)}
+.xpair .d,.xdot.d{background:var(--line-strong)}
+.xpair.single span{max-width:34px}
+.xlegend{display:flex; align-items:center; gap:4px}
+.xdot{display:inline-block; width:10px; height:10px; border-radius:50%}
+.xnote{margin:0}
+.xweek{gap:14px}
+.xgoal{display:flex; flex-direction:column; align-items:flex-end; gap:4px}
+.xdays{display:flex; justify-content:space-between; gap:6px}
+.xday{display:flex; flex-direction:column; align-items:center; gap:6px; flex:1}
+.xdot2{width:22px; height:22px; border-radius:50%; border:1.5px solid var(--line-strong)}
+.xday.on .xdot2{background:var(--accent); border-color:var(--accent)}
+.xday.today .xdot2{box-shadow:0 0 0 3px var(--panel),0 0 0 4.5px var(--line-strong)}
+.xspark{width:100%; height:80px}
+.xintro{max-width:70ch; margin:0; line-height:1.55}
+.xboard{display:grid; grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr)); gap:20px; align-items:start}
+.xcol2{display:flex; flex-direction:column; gap:14px; min-width:0}
+.xtext{margin:0; font-size:14.5px; line-height:1.5; color:var(--muted); white-space:pre-wrap; overflow-wrap:anywhere}
+.xe{padding:0}
+.xmsg{min-height:1em; font-size:13.5px; color:var(--muted)}
 .mfiles-msg{font-size:13px; color:var(--muted); min-height:18px}
 .msec{font-size:14px; font-weight:600}
 .mlinks{display:flex; flex-wrap:wrap; gap:8px}
@@ -487,20 +570,20 @@ dialog::backdrop{background:rgba(8,9,10,.5)}
   </div>
 
   <div class="view" id="view-life" role="tabpanel" aria-labelledby="tab-life" hidden>
-    <header class="head"><h1>Life Center</h1></header>
-    <p class="empty">Objectifs, projets et habitudes au long cours viendront ici. Pas encore construit.</p>
+    <header class="head"><h1>Life Center</h1><span class="sub" id="life-count"></span></header>
+    <div class="xroot" id="life-root"></div>
   </div>
   <div class="view" id="view-finance" role="tabpanel" aria-labelledby="tab-finance" hidden>
     <header class="head"><h1>Finance</h1></header>
-    <p class="empty">Budget et épargne viendront ici. Pas encore construit.</p>
+    <div class="xroot" id="fin-root"></div>
   </div>
   <div class="view" id="view-sante" role="tabpanel" aria-labelledby="tab-sante" hidden>
     <header class="head"><h1>Santé</h1></header>
-    <p class="empty">Séances de sport et suivi viendront ici. Pas encore construit.</p>
+    <div class="xroot" id="sante-root"></div>
   </div>
   <div class="view" id="view-bureau" role="tabpanel" aria-labelledby="tab-bureau" hidden>
     <header class="head"><h1>Bureau</h1></header>
-    <p class="empty">Les agents à qui tu délègues viendront ici. Pas encore construit.</p>
+    <div class="xroot" id="bureau-root"></div>
   </div>
 
 </div>
@@ -569,7 +652,8 @@ dialog::backdrop{background:rgba(8,9,10,.5)}
   // ---------- synchronisation : suivi des changements ----------
   // Chaque élément porte un updatedAt posé à chaque modification, et les suppressions
   // laissent une trace (tomb) : c'est ce qui permet de fusionner deux appareils sans rien perdre.
-  var COLLS = ["tasks","habits","notes","folders"];
+  var COLLS = ["tasks","habits","notes","folders","goals","txs","budgets","savings","workouts","metrics","asks","prefs"];
+  COLLS.forEach(function(c){ if (!state[c]) state[c] = []; });
   var SYNC_KEY = KEY + "-sync";
   var sync = { sig:{}, tomb:{}, fileId:"", ghSha:"", lastSync:0, dirty:false, running:false, again:false, driveOk:false, status:"", kind:"" };
   function sigOf(it){
@@ -2733,12 +2817,18 @@ dialog::backdrop{background:rgba(8,9,10,.5)}
     [L.tomb || {}, R.tomb || {}].forEach(function(t){
       Object.keys(t).forEach(function(id){ if (t[id] > cut) tomb[id] = Math.max(tomb[id] || 0, t[id]); });
     });
-    return { v:1, tasks: mergeColl("tasks", L.tasks, R.tasks, tomb), habits: mergeColl("habits", L.habits, R.habits, tomb),
-             notes: mergeColl("notes", L.notes, R.notes, tomb), folders: mergeColl("folders", L.folders, R.folders, tomb), tomb: tomb };
+    var out = { v:1, tomb: tomb };
+    COLLS.forEach(function(c){ out[c] = mergeColl(c, L[c], R[c], tomb); });
+    return out;
   }
-  function dataOf(st){ return { v:1, tasks: st.tasks, habits: st.habits, notes: st.notes, folders: st.folders, tomb: st.tomb }; }
+  function dataOf(st){
+    var o = { v:1, tomb: st.tomb };
+    COLLS.forEach(function(c){ o[c] = st[c] || []; });
+    return o;
+  }
   function same(a, b){
-    return JSON.stringify([a.tasks, a.habits, a.notes, a.folders, a.tomb]) === JSON.stringify([b.tasks, b.habits, b.notes, b.folders, b.tomb]);
+    function sig(x){ return JSON.stringify(COLLS.map(function(c){ return x[c] || []; }).concat([x.tomb])); }
+    return sig(a) === sig(b);
   }
 
   function setSyncStatus(msg, kind){
@@ -2796,12 +2886,12 @@ dialog::backdrop{background:rgba(8,9,10,.5)}
   }
 
   function applyMerged(m){
-    state.tasks = m.tasks; state.habits = m.habits; state.notes = m.notes; state.folders = m.folders;
+    COLLS.forEach(function(c){ state[c] = m[c] || []; });
     sync.tomb = m.tomb;
     baselineSig();
     if (!memoryOnly){ try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch(e){ memoryOnly = true; } }
     sweepDone();
-    renderTasks(); renderHabits(); renderNotes();
+    renderTasks(); renderHabits(); renderNotes(); renderExtra();
   }
 
   // --- stockage GitHub (dépôt privé, jeton qui n'expire pas chaque heure) ---
@@ -2866,9 +2956,11 @@ dialog::backdrop{background:rgba(8,9,10,.5)}
     return pull().then(function(remote){
       // l'état local est relu après le téléchargement : une modif faite pendant l'attente n'est jamais perdue
       memFlush();
-      var local = dataOf({ tasks: state.tasks, habits: state.habits, notes: state.notes, folders: state.folders, tomb: sync.tomb });
+      var lst = { tomb: sync.tomb }; COLLS.forEach(function(c){ lst[c] = state[c]; });
+      var local = dataOf(lst);
       if (!remote) return push(local);
-      remote = { tasks: remote.tasks || [], habits: remote.habits || [], notes: remote.notes || [], folders: remote.folders || [], tomb: remote.tomb || {} };
+      var rem2 = { tomb: remote.tomb || {} }; COLLS.forEach(function(c){ rem2[c] = remote[c] || []; });
+      remote = rem2;
       var merged = mergeData(local, remote);
       if (!same(merged, local)) applyMerged(merged);
       if (!same(merged, remote)) return push(merged);
@@ -2913,6 +3005,526 @@ dialog::backdrop{background:rgba(8,9,10,.5)}
   document.addEventListener("click", autoReconnect, true);
   document.addEventListener("keydown", autoReconnect, true);
   if (state.googleClientId) loadGsi(function(){}, true);
+
+  // ============ onglets : Life Center, Finance, Santé, Bureau ============
+  var xid_n = 0;
+  function nid(p){ xid_n++; return p + Date.now().toString(36) + xid_n + Math.floor(Math.random() * 46656).toString(36); }
+  function numOf(v){ var n = parseFloat(String(v).replace(/\s/g, "").replace(",", ".")); return isFinite(n) ? n : NaN; }
+  var EUR = new Intl.NumberFormat("fr-FR", { style:"currency", currency:"EUR", maximumFractionDigits:2 });
+  function eur(n){ return EUR.format(Math.round(n * 100) / 100); }
+  function num1(n){ return (Math.round(n * 10) / 10).toString().replace(".", ","); }
+  function dFromIso(s){ return new Date(s + "T12:00:00"); }
+  function dFr(s, withYear){
+    return dFromIso(s).toLocaleDateString("fr-FR", withYear ? { day:"numeric", month:"short", year:"numeric" } : { day:"numeric", month:"short" });
+  }
+  function monthLabel(ym){
+    var t = new Date(+ym.slice(0, 4), +ym.slice(5, 7) - 1, 1).toLocaleDateString("fr-FR", { month:"long", year:"numeric" });
+    return t.charAt(0).toUpperCase() + t.slice(1);
+  }
+  function ymOf(d){ return d.slice(0, 7); }
+  function ymShift(ym, k){ var d = new Date(+ym.slice(0, 4), +ym.slice(5, 7) - 1 + k, 1); return iso(d).slice(0, 7); }
+  function monStart(isoDate){
+    var x = dFromIso(isoDate), wd = (x.getDay() + 6) % 7; x.setDate(x.getDate() - wd); return iso(x);
+  }
+  function addDays(isoDate, k){ var x = dFromIso(isoDate); x.setDate(x.getDate() + k); return iso(x); }
+  function daysBetween(a, b){ return Math.round((dFromIso(b) - dFromIso(a)) / 86400000); }
+  function todayIso(){ return iso(new Date()); }
+
+  function xInput(type, ph, label, val){
+    var i = el("input"); i.type = type; if (ph) i.placeholder = ph; i.setAttribute("aria-label", label);
+    if (type === "text") i.autocomplete = "off";
+    if (val != null) i.value = val;
+    return i;
+  }
+  function xSelect(opts, val, label){
+    var s = el("select","msel"); s.setAttribute("aria-label", label);
+    opts.forEach(function(o){ var op = el("option", null, o); op.value = o; s.appendChild(op); });
+    if (val) s.value = val;
+    return s;
+  }
+  function xBar(pct, over, label){
+    var b = el("div","xbar"); b.setAttribute("role", "progressbar"); b.setAttribute("aria-valuemin", "0"); b.setAttribute("aria-valuemax", "100");
+    b.setAttribute("aria-valuenow", String(Math.round(Math.min(100, pct)))); if (label) b.setAttribute("aria-label", label);
+    var f = el("span"); f.style.width = Math.max(0, Math.min(100, pct)) + "%"; if (over) f.className = "over";
+    b.appendChild(f); return b;
+  }
+  function xSec(title, sub){
+    var h = el("div","rowhead"); h.appendChild(el("h2", null, title));
+    if (sub) h.appendChild(el("span","sub", sub));
+    return h;
+  }
+  function xGroup(){ return el("section","xsec"); }
+  function xCopy(text, done){
+    function fb(){
+      var t = document.createElement("textarea"); t.value = text; t.style.cssText = "position:fixed;opacity:0"; document.body.appendChild(t); t.select();
+      try{ document.execCommand("copy"); }catch(e){} t.remove(); done();
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, fb); else fb();
+  }
+  function xSave(which){ save(); renderExtra(which); }
+
+  // ---------- Life Center ----------
+  var LIFE_AREAS = ["Études", "Carrière", "Finance", "Santé", "Perso"];
+  function lifeDue(g){
+    if (!g.due) return { t:"sans échéance", late:false };
+    var d = daysBetween(todayIso(), g.due);
+    if (d < 0) return { t:"en retard de " + (-d) + (d === -1 ? " jour" : " jours"), late:true };
+    if (d === 0) return { t:"échéance aujourd'hui", late:false };
+    if (d === 1) return { t:"échéance demain", late:false };
+    return { t:"dans " + d + " jours · " + dFr(g.due), late:false };
+  }
+  function lifeGoalCard(g){
+    var card = el("article","xcard"), head = el("div","xhead");
+    var tt = el("div","xtt"); tt.appendChild(el("h3","xname", g.title));
+    var meta = el("div","sub"), due = lifeDue(g);
+    meta.appendChild(el("span","xchip", g.area || "Perso"));
+    var dsp = el("span", due.late ? "xlate" : null, " " + due.t); meta.appendChild(dsp);
+    tt.appendChild(meta); head.appendChild(tt);
+    var steps = g.steps || [], done = steps.filter(function(x){ return x.d; }).length;
+    var pct = steps.length ? done / steps.length * 100 : (g.done ? 100 : 0);
+    var pn = el("div","xpct"); pn.appendChild(el("span","xnum", Math.round(pct) + "%")); head.appendChild(pn);
+    card.appendChild(head);
+    card.appendChild(xBar(pct, false, "Avancement de « " + g.title + " »"));
+    if (steps.length) card.appendChild(el("div","sub", done + " sur " + steps.length + (steps.length > 1 ? " étapes" : " étape")));
+    var ul = el("ul","xsteps");
+    steps.forEach(function(st, i){
+      var li = el("li"), b = el("button","tkbtn"); b.type = "button"; b.setAttribute("aria-pressed", st.d ? "true" : "false");
+      b.innerHTML = '<span class="box"><svg width="12" height="12" aria-hidden="true" style="color:var(--bg)"><use href="#ck"/></svg></span>';
+      b.appendChild(el("span","tklab", st.t));
+      b.addEventListener("click", function(){ st.d = !st.d; g.steps = steps.slice(); xSave("life"); });
+      li.appendChild(b);
+      li.appendChild(killBtn("Supprimer l'étape « " + st.t + " »", function(){ g.steps = steps.filter(function(_, k){ return k !== i; }); xSave("life"); }));
+      ul.appendChild(li);
+    });
+    card.appendChild(ul);
+    var f = el("form","xadd"), inp = xInput("text", "Ajouter une étape", "Nouvelle étape de « " + g.title + " »");
+    var ab = el("button","btn ghost","Ajouter"); ab.type = "submit"; f.appendChild(inp); f.appendChild(ab);
+    f.addEventListener("submit", function(e){
+      e.preventDefault(); var v = inp.value.trim(); if (!v) return;
+      g.steps = steps.concat([{ t:v, d:false }]); xSave("life");
+    });
+    card.appendChild(f);
+    var act = el("div","mact");
+    var fin = el("button","btn ghost", "Marquer comme terminé"); fin.type = "button";
+    fin.addEventListener("click", function(){ g.done = true; g.doneAt = todayIso(); xSave("life"); });
+    act.appendChild(fin);
+    act.appendChild(twoStep("Supprimer", "Confirmer la suppression", function(){ state.goals = state.goals.filter(function(x){ return x.id !== g.id; }); xSave("life"); }));
+    card.appendChild(act);
+    return card;
+  }
+  function lifeHabits(){
+    var sec = xGroup(); sec.appendChild(xSec("Régularité des habitudes", "30 derniers jours"));
+    if (!state.habits.length){ sec.appendChild(el("p","empty","Aucune habitude pour l'instant. Ajoute-les depuis Aujourd'hui.")); return sec; }
+    var grid = el("div","xhab");
+    var days = []; for (var i = 29; i >= 0; i--) days.push(shift(-i));
+    state.habits.forEach(function(h){
+      var set = {}; (h.dates || []).forEach(function(d){ set[d] = 1; });
+      var n = days.filter(function(d){ return set[d]; }).length, best = 0, run = 0;
+      days.forEach(function(d){ if (set[d]){ run++; if (run > best) best = run; } else run = 0; });
+      var c = el("div","xcard xhabc"), top = el("div","xhead");
+      top.appendChild(el("h3","xname", h.name)); top.appendChild(el("span","xnum", Math.round(n / 30 * 100) + "%"));
+      c.appendChild(top);
+      var strip = el("div","xstrip"); strip.setAttribute("aria-hidden", "true");
+      days.forEach(function(d){ var s = el("span", set[d] ? "on" : ""); strip.appendChild(s); });
+      c.appendChild(strip);
+      c.appendChild(el("div","sub", n + " jours sur 30 · meilleure série : " + best + (best > 1 ? " jours" : " jour")));
+      grid.appendChild(c);
+    });
+    sec.appendChild(grid); return sec;
+  }
+  function renderLife(){
+    var root = $("life-root"); if (!root) return;
+    root.textContent = "";
+    var goals = state.goals.filter(function(g){ return !g.done; });
+    var finished = state.goals.filter(function(g){ return g.done; });
+    var sub = $("life-count"); if (sub) sub.textContent = goals.length ? goals.length + (goals.length > 1 ? " objectifs en cours" : " objectif en cours") : "";
+    var sec = xGroup(); sec.appendChild(xSec("Objectifs et projets"));
+    var f = el("form","xform"), t = xInput("text", "Un objectif ou un projet (ex. Valider le semestre 3)", "Nouvel objectif");
+    var a = xSelect(LIFE_AREAS, "Perso", "Domaine"), d = xInput("date", "", "Échéance (facultatif)");
+    var b = el("button","btn","Ajouter"); b.type = "submit";
+    var row2 = el("div","xrow"); row2.appendChild(a); row2.appendChild(d); row2.appendChild(b);
+    f.appendChild(t); f.appendChild(row2);
+    f.addEventListener("submit", function(e){
+      e.preventDefault(); var v = t.value.trim(); if (!v) return;
+      state.goals.push({ id: nid("g"), title:v, area:a.value, due:d.value || "", steps:[], done:false, at:Date.now() });
+      xSave("life");
+    });
+    sec.appendChild(f);
+    goals.sort(function(x, y){ return (x.due || "9999") < (y.due || "9999") ? -1 : (x.due || "9999") > (y.due || "9999") ? 1 : x.at - y.at; });
+    if (!goals.length) sec.appendChild(el("p","empty","Pas d'objectif en cours. Note ce que tu veux accomplir, découpe-le en étapes et suis ton avancement ici."));
+    var list = el("div","xgrid"); goals.forEach(function(g){ list.appendChild(lifeGoalCard(g)); });
+    sec.appendChild(list);
+    if (finished.length){
+      var dt = el("details","xdone"), sm = el("summary", null, "Terminés (" + finished.length + ")"); dt.appendChild(sm);
+      finished.sort(function(x, y){ return (y.doneAt || "") < (x.doneAt || "") ? -1 : 1; }).forEach(function(g){
+        var r = el("div","xline"); r.appendChild(el("span","xname2", g.title));
+        r.appendChild(el("span","sub", g.doneAt ? dFr(g.doneAt, true) : ""));
+        var re = el("button","link","Rouvrir"); re.type = "button"; re.addEventListener("click", function(){ g.done = false; g.doneAt = ""; xSave("life"); });
+        r.appendChild(re);
+        r.appendChild(killBtn("Supprimer « " + g.title + " »", function(){ state.goals = state.goals.filter(function(x){ return x.id !== g.id; }); xSave("life"); }));
+        dt.appendChild(r);
+      });
+      sec.appendChild(dt);
+    }
+    root.appendChild(sec);
+    root.appendChild(lifeHabits());
+  }
+
+  // ---------- Finance ----------
+  var FIN_CATS = ["Courses", "Logement", "Transport", "Sorties", "Abonnements", "Études", "BDE", "Santé", "Autre"];
+  var finMonth = ymOf(todayIso());
+  function finTx(ym){ return state.txs.filter(function(x){ return ymOf(x.date) === ym; }); }
+  function finTotals(list){
+    var r = 0, d = 0, by = {};
+    list.forEach(function(x){ if (x.kind === "rev") r += x.amount; else { d += x.amount; by[x.cat] = (by[x.cat] || 0) + x.amount; } });
+    return { rev:r, dep:d, by:by };
+  }
+  function finBudgetOf(cat){
+    for (var i = 0; i < state.budgets.length; i++) if (state.budgets[i].cat === cat) return state.budgets[i];
+    return null;
+  }
+  var finEditBudgets = false;
+  function renderFinance(){
+    var root = $("fin-root"); if (!root) return;
+    root.textContent = "";
+    var list = finTx(finMonth), tot = finTotals(list);
+    var nav = el("div","xnav");
+    var pv = el("button","btn ghost","‹"); pv.type = "button"; pv.setAttribute("aria-label", "Mois précédent");
+    var nx = el("button","btn ghost","›"); nx.type = "button"; nx.setAttribute("aria-label", "Mois suivant");
+    pv.addEventListener("click", function(){ finMonth = ymShift(finMonth, -1); renderFinance(); });
+    nx.addEventListener("click", function(){ finMonth = ymShift(finMonth, 1); renderFinance(); });
+    var lab = el("h2", null, monthLabel(finMonth)); lab.setAttribute("aria-live", "polite");
+    nav.appendChild(pv); nav.appendChild(lab); nav.appendChild(nx);
+    root.appendChild(nav);
+    // résumé
+    var sum = el("div","xsum");
+    [["Revenus", tot.rev, ""], ["Dépenses", tot.dep, ""], ["Solde du mois", tot.rev - tot.dep, tot.rev - tot.dep < 0 ? "neg" : ""]].forEach(function(c){
+      var k = el("div","xcard xk"); k.appendChild(el("span","sub", c[0])); k.appendChild(el("span","xnum big " + c[2], eur(c[1]))); sum.appendChild(k);
+    });
+    root.appendChild(sum);
+    // ajout
+    var sec = xGroup(); sec.appendChild(xSec("Ajouter une opération"));
+    var f = el("form","xform"), kind = "dep";
+    var seg = el("div","xseg"); seg.setAttribute("role", "group"); seg.setAttribute("aria-label", "Type d'opération");
+    var bd = el("button", null, "Dépense"), br = el("button", null, "Revenu"); bd.type = br.type = "button";
+    function setKind(k){ kind = k; bd.setAttribute("aria-pressed", k === "dep" ? "true" : "false"); br.setAttribute("aria-pressed", k === "rev" ? "true" : "false"); cat.disabled = k === "rev"; }
+    bd.addEventListener("click", function(){ setKind("dep"); }); br.addEventListener("click", function(){ setKind("rev"); });
+    seg.appendChild(bd); seg.appendChild(br);
+    var am = xInput("text", "Montant en €", "Montant"); am.inputMode = "decimal";
+    var lb = xInput("text", "Libellé (ex. Courses Lidl)", "Libellé");
+    var cat = xSelect(FIN_CATS, "Courses", "Catégorie");
+    var dt = xInput("date", "", "Date", todayIso());
+    var sb = el("button","btn","Ajouter"); sb.type = "submit";
+    var r1 = el("div","xrow"); r1.appendChild(seg); r1.appendChild(am);
+    var r2 = el("div","xrow"); r2.appendChild(cat); r2.appendChild(dt); r2.appendChild(sb);
+    var msg = el("div","xmsg"); msg.setAttribute("aria-live", "polite");
+    f.appendChild(r1); f.appendChild(lb); f.appendChild(r2); f.appendChild(msg);
+    setKind("dep");
+    f.addEventListener("submit", function(e){
+      e.preventDefault();
+      var v = numOf(am.value);
+      if (!(v > 0)){ msg.textContent = "Saisis un montant supérieur à 0."; return; }
+      if (!dt.value){ msg.textContent = "Choisis une date."; return; }
+      state.txs.push({ id: nid("x"), kind:kind, amount:Math.round(v * 100) / 100, label:lb.value.trim(), cat: kind === "rev" ? "Revenu" : cat.value, date:dt.value, at:Date.now() });
+      finMonth = ymOf(dt.value); xSave("finance");
+    });
+    sec.appendChild(f); root.appendChild(sec);
+    // budgets
+    var bs = xGroup(), bh = xSec("Budget par catégorie", "dépenses du mois");
+    var eb = el("button","link", finEditBudgets ? "Terminer" : "Définir les budgets"); eb.type = "button";
+    eb.addEventListener("click", function(){ finEditBudgets = !finEditBudgets; renderFinance(); });
+    bh.appendChild(eb); bs.appendChild(bh);
+    var cats = FIN_CATS.filter(function(c){ return finEditBudgets || tot.by[c] || finBudgetOf(c); });
+    Object.keys(tot.by).forEach(function(c){ if (cats.indexOf(c) === -1) cats.push(c); });
+    if (!cats.length) bs.appendChild(el("p","empty","Aucune dépense ce mois-ci. Ajoute une opération ou définis des budgets."));
+    cats.forEach(function(c){
+      var sp = tot.by[c] || 0, bg = finBudgetOf(c), row = el("div","xbud");
+      var top = el("div","xline"); top.appendChild(el("span","xname2", c));
+      if (finEditBudgets){
+        var bi = xInput("text", "Budget €", "Budget mensuel " + c, bg ? String(bg.amount).replace(".", ",") : ""); bi.inputMode = "decimal"; bi.className = "xmini";
+        bi.addEventListener("change", function(){
+          var v = numOf(bi.value), cur = finBudgetOf(c);
+          if (!(v > 0)){ if (cur) state.budgets = state.budgets.filter(function(x){ return x !== cur; }); }
+          else if (cur) cur.amount = v; else state.budgets.push({ id:"b-" + c, cat:c, amount:v });
+          save();
+        });
+        top.appendChild(bi);
+      } else top.appendChild(el("span","sub", eur(sp) + (bg ? " sur " + eur(bg.amount) : "")));
+      row.appendChild(top);
+      if (bg) row.appendChild(xBar(sp / bg.amount * 100, sp > bg.amount, "Budget " + c));
+      else if (sp) row.appendChild(xBar(tot.dep ? sp / tot.dep * 100 : 0, false, "Part de " + c));
+      bs.appendChild(row);
+    });
+    root.appendChild(bs);
+    // opérations
+    var ls = xGroup(); ls.appendChild(xSec("Opérations du mois", list.length ? list.length + (list.length > 1 ? " opérations" : " opération") : ""));
+    if (!list.length) ls.appendChild(el("p","empty","Rien de saisi pour ce mois."));
+    var ul = el("ul","xtx");
+    list.slice().sort(function(a, b){ return a.date < b.date ? 1 : a.date > b.date ? -1 : b.at - a.at; }).forEach(function(x){
+      var li = el("li"), l = el("div","xl"); l.appendChild(el("span","xname2", x.label || x.cat));
+      l.appendChild(el("span","sub", dFr(x.date) + " · " + x.cat));
+      li.appendChild(l);
+      li.appendChild(el("span","xamt " + (x.kind === "rev" ? "pos" : ""), (x.kind === "rev" ? "+" : "−") + eur(x.amount)));
+      li.appendChild(killBtn("Supprimer l'opération " + (x.label || x.cat), function(){ state.txs = state.txs.filter(function(y){ return y.id !== x.id; }); xSave("finance"); }));
+      ul.appendChild(li);
+    });
+    ls.appendChild(ul); root.appendChild(ls);
+    // historique 6 mois
+    var hs = xGroup(); hs.appendChild(xSec("Six derniers mois"));
+    var months = []; for (var i = 5; i >= 0; i--) months.push(ymShift(finMonth, -i));
+    var vals = months.map(function(m){ return finTotals(finTx(m)); });
+    var mx = Math.max.apply(null, vals.map(function(v){ return Math.max(v.rev, v.dep); }).concat([1]));
+    var ch = el("div","xchart"); ch.setAttribute("role", "img");
+    ch.setAttribute("aria-label", "Revenus et dépenses sur six mois : " + months.map(function(m, k){ return monthLabel(m) + " revenus " + eur(vals[k].rev) + ", dépenses " + eur(vals[k].dep); }).join(" ; "));
+    months.forEach(function(m, k){
+      var col = el("div","xcol"), pair = el("div","xpair");
+      var a = el("span","r"); a.style.height = (vals[k].rev / mx * 100) + "%";
+      var b = el("span","d"); b.style.height = (vals[k].dep / mx * 100) + "%";
+      pair.appendChild(a); pair.appendChild(b); col.appendChild(pair);
+      col.appendChild(el("span","sub", new Date(+m.slice(0, 4), +m.slice(5, 7) - 1, 1).toLocaleDateString("fr-FR", { month:"short" })));
+      ch.appendChild(col);
+    });
+    hs.appendChild(ch);
+    var lg = el("div","sub xlegend"); lg.appendChild(el("span","xdot r")); lg.appendChild(document.createTextNode(" Revenus   ")); lg.appendChild(el("span","xdot d")); lg.appendChild(document.createTextNode(" Dépenses"));
+    hs.appendChild(lg); root.appendChild(hs);
+    // épargne
+    var es = xGroup(); es.appendChild(xSec("Épargne", "tes objectifs"));
+    var ef = el("form","xform"), en = xInput("text", "Un objectif (ex. Voyage, permis, fonds de secours)", "Nom de l'objectif d'épargne");
+    var et = xInput("text", "Montant visé en €", "Montant visé"); et.inputMode = "decimal";
+    var eb2 = el("button","btn","Créer"); eb2.type = "submit";
+    var er = el("div","xrow"); er.appendChild(et); er.appendChild(eb2); ef.appendChild(en); ef.appendChild(er);
+    ef.addEventListener("submit", function(e){
+      e.preventDefault(); var v = numOf(et.value), n = en.value.trim();
+      if (!n || !(v > 0)) return;
+      state.savings.push({ id:nid("s"), name:n, target:v, saved:0, at:Date.now() }); xSave("finance");
+    });
+    es.appendChild(ef);
+    if (!state.savings.length) es.appendChild(el("p","empty","Aucun objectif d'épargne. Crée-en un pour suivre ce que tu mets de côté."));
+    var sg = el("div","xgrid");
+    state.savings.forEach(function(s){
+      var c = el("article","xcard"), hd = el("div","xhead"); hd.appendChild(el("h3","xname", s.name));
+      hd.appendChild(el("span","xnum", Math.round(s.saved / s.target * 100) + "%")); c.appendChild(hd);
+      c.appendChild(xBar(s.saved / s.target * 100, false, "Avancement de « " + s.name + " »"));
+      c.appendChild(el("div","sub", eur(s.saved) + " sur " + eur(s.target) + (s.saved < s.target ? " · reste " + eur(s.target - s.saved) : " · objectif atteint")));
+      var mf = el("form","xadd"), mi = xInput("text", "Montant €", "Montant à ajouter ou retirer pour " + s.name); mi.inputMode = "decimal";
+      var pl = el("button","btn ghost","Ajouter"); pl.type = "submit";
+      var mn = el("button","btn ghost","Retirer"); mn.type = "button";
+      mf.appendChild(mi); mf.appendChild(pl); mf.appendChild(mn);
+      mf.addEventListener("submit", function(e){ e.preventDefault(); var v = numOf(mi.value); if (!(v > 0)) return; s.saved = Math.round((s.saved + v) * 100) / 100; xSave("finance"); });
+      mn.addEventListener("click", function(){ var v = numOf(mi.value); if (!(v > 0)) return; s.saved = Math.max(0, Math.round((s.saved - v) * 100) / 100); xSave("finance"); });
+      c.appendChild(mf);
+      c.appendChild(twoStep("Supprimer", "Confirmer la suppression", function(){ state.savings = state.savings.filter(function(x){ return x.id !== s.id; }); xSave("finance"); }));
+      sg.appendChild(c);
+    });
+    es.appendChild(sg); root.appendChild(es);
+    root.appendChild(el("p","sub xnote","Les montants sont saisis à la main : rien n'est relié à ta banque. Outil de suivi personnel, pas un conseil financier."));
+  }
+
+  // ---------- Santé ----------
+  var SPORTS = ["Course", "Musculation", "Vélo", "Natation", "Marche", "Sport co", "Autre"];
+  function prefOf(){
+    for (var i = 0; i < state.prefs.length; i++) if (state.prefs[i].id === "prefs-main") return state.prefs[i];
+    var p = { id:"prefs-main", weeklySessions:3 }; state.prefs.push(p); return p;
+  }
+  function weekStats(ws){
+    var we = addDays(ws, 6), n = 0, min = 0;
+    state.workouts.forEach(function(w){ if (w.date >= ws && w.date <= we){ n++; min += w.minutes || 0; } });
+    return { n:n, min:min };
+  }
+  function sparkline(pts, w, h){
+    var ns = "http://www.w3.org/2000/svg", sv = document.createElementNS(ns, "svg");
+    sv.setAttribute("viewBox", "0 0 " + w + " " + h); sv.setAttribute("class", "xspark"); sv.setAttribute("aria-hidden", "true");
+    if (pts.length < 2) return sv;
+    var ys = pts.map(function(p){ return p.y; }), lo = Math.min.apply(null, ys), hi = Math.max.apply(null, ys), pad = 6;
+    if (hi === lo){ hi += 1; lo -= 1; }
+    var x0 = pts[0].x, x1 = pts[pts.length - 1].x, span = x1 - x0 || 1;
+    var d = pts.map(function(p, i){
+      return (i ? "L" : "M") + (pad + (p.x - x0) / span * (w - 2 * pad)).toFixed(1) + " " + (h - pad - (p.y - lo) / (hi - lo) * (h - 2 * pad)).toFixed(1);
+    }).join(" ");
+    var path = document.createElementNS(ns, "path"); path.setAttribute("d", d); path.setAttribute("fill", "none"); path.setAttribute("stroke", "var(--accent)");
+    path.setAttribute("stroke-width", "2"); path.setAttribute("stroke-linecap", "round"); path.setAttribute("stroke-linejoin", "round");
+    sv.appendChild(path);
+    var last = pts[pts.length - 1], c = document.createElementNS(ns, "circle");
+    c.setAttribute("cx", (pad + (last.x - x0) / span * (w - 2 * pad)).toFixed(1)); c.setAttribute("cy", (h - pad - (last.y - lo) / (hi - lo) * (h - 2 * pad)).toFixed(1));
+    c.setAttribute("r", "3.5"); c.setAttribute("fill", "var(--accent)"); sv.appendChild(c);
+    return sv;
+  }
+  function renderSante(){
+    var root = $("sante-root"); if (!root) return;
+    root.textContent = "";
+    var pf = prefOf(), goal = Math.max(1, +pf.weeklySessions || 3), today = todayIso(), ws = monStart(today), cur = weekStats(ws);
+    // cette semaine
+    var sec = xGroup(); sec.appendChild(xSec("Cette semaine", "du " + dFr(ws) + " au " + dFr(addDays(ws, 6))));
+    var wk = el("div","xcard xweek"), top = el("div","xhead");
+    var big = el("div"); big.appendChild(el("span","xnum big", cur.n + " / " + goal)); big.appendChild(el("span","sub", cur.n === 1 ? " séance" : " séances"));
+    top.appendChild(big);
+    var gl = el("label","xgoal"); gl.appendChild(el("span","sub","Objectif par semaine"));
+    var gi = xInput("number", "", "Objectif de séances par semaine", String(goal)); gi.min = "1"; gi.max = "14"; gi.className = "xmini";
+    gi.addEventListener("change", function(){ var v = Math.round(+gi.value); if (v >= 1 && v <= 14){ pf.weeklySessions = v; xSave("sante"); } });
+    gl.appendChild(gi); top.appendChild(gl); wk.appendChild(top);
+    wk.appendChild(xBar(cur.n / goal * 100, false, "Séances de la semaine"));
+    var days = el("div","xdays");
+    for (var i = 0; i < 7; i++){
+      var dd = addDays(ws, i), has = state.workouts.some(function(w){ return w.date === dd; });
+      var c = el("div", "xday" + (has ? " on" : "") + (dd === today ? " today" : ""));
+      c.appendChild(el("span","sub", dFromIso(dd).toLocaleDateString("fr-FR", { weekday:"narrow" })));
+      var dot = el("span","xdot2"); c.appendChild(dot);
+      c.setAttribute("aria-label", dFromIso(dd).toLocaleDateString("fr-FR", { weekday:"long", day:"numeric" }) + (has ? " : séance" : " : pas de séance"));
+      days.appendChild(c);
+    }
+    wk.appendChild(days);
+    var streak = 0, w0 = addDays(ws, -7);
+    if (cur.n >= goal) streak++;
+    while (weekStats(w0).n >= goal){ streak++; w0 = addDays(w0, -7); }
+    wk.appendChild(el("div","sub", cur.min + " min cette semaine" + (streak ? " · " + streak + (streak > 1 ? " semaines" : " semaine") + " de suite à l'objectif" : "")));
+    sec.appendChild(wk);
+    // ajout séance
+    var f = el("form","xform"), sp = xSelect(SPORTS, "Course", "Type de séance");
+    var du = xInput("number", "Durée en min", "Durée en minutes"); du.min = "1"; du.max = "600"; du.inputMode = "numeric";
+    var dt = xInput("date", "", "Date de la séance", today);
+    var nt = xInput("text", "Note (facultatif)", "Note");
+    var sb = el("button","btn","Ajouter la séance"); sb.type = "submit";
+    var r1 = el("div","xrow"); r1.appendChild(sp); r1.appendChild(du); r1.appendChild(dt);
+    var r2 = el("div","xrow"); r2.appendChild(nt); r2.appendChild(sb);
+    f.appendChild(r1); f.appendChild(r2);
+    f.addEventListener("submit", function(e){
+      e.preventDefault(); var m = Math.round(+du.value);
+      if (!dt.value) return;
+      state.workouts.push({ id:nid("w"), type:sp.value, minutes: m > 0 ? m : 0, date:dt.value, note:nt.value.trim(), at:Date.now() }); xSave("sante");
+    });
+    sec.appendChild(f);
+    var ul = el("ul","xtx");
+    state.workouts.slice().sort(function(a, b){ return a.date < b.date ? 1 : a.date > b.date ? -1 : b.at - a.at; }).slice(0, 10).forEach(function(w){
+      var li = el("li"), l = el("div","xl"); l.appendChild(el("span","xname2", w.type + (w.minutes ? " · " + w.minutes + " min" : "")));
+      l.appendChild(el("span","sub", dFr(w.date) + (w.note ? " · " + w.note : ""))); li.appendChild(l);
+      li.appendChild(killBtn("Supprimer la séance du " + dFr(w.date), function(){ state.workouts = state.workouts.filter(function(x){ return x.id !== w.id; }); xSave("sante"); }));
+      ul.appendChild(li);
+    });
+    if (!state.workouts.length) sec.appendChild(el("p","empty","Aucune séance enregistrée. Ajoute ta première ci-dessus."));
+    sec.appendChild(ul);
+    // 8 semaines
+    if (state.workouts.length){
+      sec.appendChild(el("div","sub","Huit dernières semaines"));
+      var hist = el("div","xchart xweeks"), mxw = goal;
+      var wks = []; for (var k = 7; k >= 0; k--){ var s0 = addDays(ws, -7 * k); wks.push({ s:s0, n:weekStats(s0).n }); mxw = Math.max(mxw, wks[wks.length - 1].n); }
+      hist.setAttribute("role", "img"); hist.setAttribute("aria-label", "Séances par semaine : " + wks.map(function(x){ return x.n; }).join(", "));
+      wks.forEach(function(x){
+        var col = el("div","xcol"), pair = el("div","xpair single"), b = el("span", x.n >= goal ? "r" : "d"); b.style.height = (x.n / mxw * 100) + "%"; if (!x.n) b.style.height = "2%";
+        pair.appendChild(b); col.appendChild(pair); col.appendChild(el("span","sub", dFr(x.s))); hist.appendChild(col);
+      });
+      sec.appendChild(hist);
+    }
+    root.appendChild(sec);
+    // mesures
+    var ms = xGroup(); ms.appendChild(xSec("Poids et sommeil"));
+    var mf = el("form","xform"), md = xInput("date", "", "Date de la mesure", today);
+    var mk = xInput("text", "Poids en kg", "Poids en kilos"); mk.inputMode = "decimal";
+    var mh = xInput("text", "Sommeil en h", "Heures de sommeil la nuit passée"); mh.inputMode = "decimal";
+    var mb = el("button","btn","Enregistrer"); mb.type = "submit";
+    var mr = el("div","xrow"); mr.appendChild(md); mr.appendChild(mk); mr.appendChild(mh); mr.appendChild(mb); mf.appendChild(mr);
+    var mm = el("div","xmsg"); mm.setAttribute("aria-live", "polite"); mf.appendChild(mm);
+    mf.addEventListener("submit", function(e){
+      e.preventDefault();
+      var kg = numOf(mk.value), sl = numOf(mh.value), hasKg = kg > 20 && kg < 400, hasSl = sl > 0 && sl <= 24;
+      if (!md.value || (!hasKg && !hasSl)){ mm.textContent = "Saisis un poids (kg) ou une durée de sommeil (h)."; return; }
+      var id = "m-" + md.value, rec = null;
+      for (var i = 0; i < state.metrics.length; i++) if (state.metrics[i].id === id) rec = state.metrics[i];
+      if (!rec){ rec = { id:id, date:md.value }; state.metrics.push(rec); }
+      if (hasKg) rec.kg = Math.round(kg * 10) / 10;
+      if (hasSl) rec.sleep = Math.round(sl * 10) / 10;
+      xSave("sante");
+    });
+    ms.appendChild(mf);
+    var wpts = state.metrics.filter(function(m){ return m.kg; }).sort(function(a, b){ return a.date < b.date ? -1 : 1; });
+    var spts = state.metrics.filter(function(m){ return m.sleep && m.date >= addDays(today, -6); });
+    var cards = el("div","xgrid");
+    var wc = el("div","xcard"); wc.appendChild(el("span","sub","Poids"));
+    if (wpts.length){
+      var lastW = wpts[wpts.length - 1], ref = null;
+      wpts.forEach(function(m){ if (m.date <= addDays(lastW.date, -30)) ref = m; });
+      wc.appendChild(el("span","xnum big", num1(lastW.kg) + " kg"));
+      wc.appendChild(el("span","sub", "le " + dFr(lastW.date) + (ref ? " · " + (lastW.kg - ref.kg > 0 ? "+" : lastW.kg - ref.kg < 0 ? "−" : "") + num1(Math.abs(lastW.kg - ref.kg)) + " kg sur 30 jours" : "")));
+      wc.appendChild(sparkline(wpts.slice(-30).map(function(m){ return { x:dFromIso(m.date).getTime(), y:m.kg }; }), 300, 80));
+    } else wc.appendChild(el("p","empty","Pas encore de mesure."));
+    cards.appendChild(wc);
+    var sc = el("div","xcard"); sc.appendChild(el("span","sub","Sommeil, 7 derniers jours"));
+    if (spts.length){
+      var avg = spts.reduce(function(a, m){ return a + m.sleep; }, 0) / spts.length;
+      sc.appendChild(el("span","xnum big", num1(avg) + " h"));
+      sc.appendChild(el("span","sub","moyenne sur " + spts.length + (spts.length > 1 ? " nuits" : " nuit")));
+    } else sc.appendChild(el("p","empty","Pas de nuit enregistrée cette semaine."));
+    cards.appendChild(sc); ms.appendChild(cards);
+    var rl = state.metrics.slice().sort(function(a, b){ return a.date < b.date ? 1 : -1; }).slice(0, 6);
+    var mu = el("ul","xtx");
+    rl.forEach(function(m){
+      var li = el("li"), l = el("div","xl"); l.appendChild(el("span","xname2", [m.kg ? num1(m.kg) + " kg" : "", m.sleep ? num1(m.sleep) + " h de sommeil" : ""].filter(Boolean).join(" · ")));
+      l.appendChild(el("span","sub", dFr(m.date, true))); li.appendChild(l);
+      li.appendChild(killBtn("Supprimer la mesure du " + dFr(m.date), function(){ state.metrics = state.metrics.filter(function(x){ return x.id !== m.id; }); xSave("sante"); }));
+      mu.appendChild(li);
+    });
+    ms.appendChild(mu); root.appendChild(ms);
+    root.appendChild(el("p","sub xnote","Suivi personnel, ce n'est pas un avis médical."));
+  }
+
+  // ---------- Bureau ----------
+  var AGENTS = ["Recherche", "Rédaction", "Cours et fiches", "Organisation", "Autre"];
+  var ASK_COLS = [["todo", "À faire"], ["doing", "En cours"], ["done", "Fait"]];
+  function askPrompt(a){
+    return ["Demande pour Claude (depuis Vesper, onglet Bureau)", "Type : " + a.agent, "Titre : " + a.title,
+            a.details ? "Détails : " + a.details : "", "Contexte : mes notes et mes cours sont dans Memoria (dépôt vesper-data)."].filter(Boolean).join("\n");
+  }
+  function renderBureau(){
+    var root = $("bureau-root"); if (!root) return;
+    root.textContent = "";
+    var intro = el("p","sub xintro","Écris ici ce que tu veux déléguer à Claude. Le bouton « Copier pour Claude » prépare le message à coller dans une conversation. Quand c'est fait, note le résultat sur la carte. Le traitement automatique pendant la nuit n'est pas encore branché.");
+    root.appendChild(intro);
+    var f = el("form","xform"), t = xInput("text", "Ce que tu veux déléguer (ex. Fiche de révision du chapitre 3)", "Titre de la demande");
+    var d = el("textarea"); d.rows = 3; d.placeholder = "Détails utiles : sources, format voulu, date limite…"; d.setAttribute("aria-label", "Détails de la demande");
+    var a = xSelect(AGENTS, "Recherche", "Type de demande"), b = el("button","btn","Ajouter"); b.type = "submit";
+    var r = el("div","xrow"); r.appendChild(a); r.appendChild(b);
+    f.appendChild(t); f.appendChild(d); f.appendChild(r);
+    f.addEventListener("submit", function(e){
+      e.preventDefault(); var v = t.value.trim(); if (!v) return;
+      state.asks.push({ id:nid("a"), title:v, details:d.value.trim(), agent:a.value, status:"todo", result:"", at:Date.now() }); xSave("bureau");
+    });
+    root.appendChild(f);
+    var board = el("div","xboard");
+    ASK_COLS.forEach(function(col){
+      var c = el("section","xcol2"), list = state.asks.filter(function(x){ return x.status === col[0]; }).sort(function(x, y){ return y.at - x.at; });
+      var h = el("div","rowhead"); h.appendChild(el("h3", null, col[1])); h.appendChild(el("span","sub", String(list.length))); c.appendChild(h);
+      if (!list.length) c.appendChild(el("p","empty xe", col[0] === "todo" ? "Rien en attente." : col[0] === "doing" ? "Rien en cours." : "Rien de terminé."));
+      list.forEach(function(x){
+        var card = el("article","xcard"), hd = el("div","xhead"); hd.appendChild(el("h4","xname", x.title)); card.appendChild(hd);
+        card.appendChild(el("span","xchip", x.agent));
+        if (x.details) card.appendChild(el("p","xtext", x.details));
+        if (x.status === "done" || x.result){
+          var rs = el("textarea"); rs.rows = 3; rs.placeholder = "Résultat ou lien vers la note de Memoria…"; rs.value = x.result || ""; rs.setAttribute("aria-label", "Résultat de « " + x.title + " »");
+          rs.addEventListener("change", function(){ x.result = rs.value.trim(); save(); });
+          card.appendChild(rs);
+        }
+        var act = el("div","mact");
+        var cp = el("button","btn ghost","Copier pour Claude"); cp.type = "button";
+        cp.addEventListener("click", function(){ xCopy(askPrompt(x), function(){ cp.textContent = "Copié"; setTimeout(function(){ cp.textContent = "Copier pour Claude"; }, 1800); }); });
+        act.appendChild(cp);
+        ASK_COLS.forEach(function(o){
+          if (o[0] === x.status) return;
+          var mv = el("button","btn ghost", o[0] === "done" ? "Marquer fait" : o[0] === "doing" ? "En cours" : "À faire"); mv.type = "button";
+          mv.addEventListener("click", function(){ x.status = o[0]; xSave("bureau"); }); act.appendChild(mv);
+        });
+        act.appendChild(twoStep("Supprimer", "Confirmer la suppression", function(){ state.asks = state.asks.filter(function(y){ return y.id !== x.id; }); xSave("bureau"); }));
+        card.appendChild(act); c.appendChild(card);
+      });
+      board.appendChild(c);
+    });
+    root.appendChild(board);
+  }
+
+  function renderExtra(which){
+    if (!which || which === "life") renderLife();
+    if (!which || which === "finance") renderFinance();
+    if (!which || which === "sante") renderSante();
+    if (!which || which === "bureau") renderBureau();
+  }
 
   // ---------- branchements ----------
   $("cal-prev").addEventListener("click", function(){ calGo(-1); });
@@ -3002,6 +3614,7 @@ dialog::backdrop{background:rgba(8,9,10,.5)}
   document.addEventListener("visibilitychange", function(){ if (!document.hidden) sweepAndRefresh(); });
   renderHabits();
   renderNotes();
+  renderExtra();
   initSettings();
   renderAgendaEntry();
   initWxDialog();
