@@ -553,6 +553,9 @@ h4.xname{font-family:var(--sans); font-size:16px; font-weight:600; line-height:1
       <div class="act" style="justify-content:flex-start">
         <button class="btn ghost" type="button" id="sync-now">Synchroniser maintenant</button>
       </div>
+      <h2 id="h-bk" style="margin-top:28px">Sauvegarde et export</h2>
+      <p class="empty" style="padding:0">L'export zip contient toutes tes données, tes notes de Memoria en Markdown rangées par dossier, et tes fichiers joints (Excel, PowerPoint…). C'est ta vraie copie de secours : garde-la ailleurs que sur GitHub.</p>
+      <div id="bk-root" style="display:flex; flex-direction:column; gap:12px"></div>
       <h3 style="margin-top:4px">Créer le dépôt et le jeton</h3>
       <ol class="steps">
         <li>Sur github.com, crée un dépôt <strong>privé</strong> nommé <code>vesper-data</code>.</li>
@@ -1020,6 +1023,7 @@ h4.xname{font-family:var(--sans); font-size:16px; font-weight:600; line-height:1
     });
     window.scrollTo({ top: 0, behavior: "smooth" });
     if (tab && tab.id === "tab-calendrier") loadCalMonth();
+    if (tab && tab.id === "tab-reglages") renderBackup();
   }
   tabs.forEach(function(t){ t.addEventListener("click", function(){ show(t); }); });
 
@@ -2978,6 +2982,7 @@ h4.xname{font-family:var(--sans); font-size:16px; font-weight:600; line-height:1
       sync.lastSync = Date.now(); sync.dirty = false; persistSync();
       setSyncStatus(syncLabel(), "ok");
       filesSync();
+      bkDaily().catch(function(){});
     }).catch(function(err){
       var m = err.message;
       if (m === "conflict") sync.again = true;
@@ -3015,6 +3020,218 @@ h4.xname{font-family:var(--sans); font-size:16px; font-weight:600; line-height:1
   document.addEventListener("click", autoReconnect, true);
   document.addEventListener("keydown", autoReconnect, true);
   if (state.googleClientId) loadGsi(function(){}, true);
+
+  // ============ sauvegarde et export ============
+  var BK_KEEP = 14, BK_KEY = KEY + "-bk";
+  var CRC_T = null;
+  function crc32(u8){
+    if (!CRC_T){ CRC_T = []; for (var n = 0; n < 256; n++){ var c = n; for (var k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; CRC_T[n] = c >>> 0; } }
+    var crc = 0xFFFFFFFF; for (var i = 0; i < u8.length; i++) crc = CRC_T[(crc ^ u8[i]) & 255] ^ (crc >>> 8);
+    return (crc ^ 0xFFFFFFFF) >>> 0;
+  }
+  function zipBuild(entries){
+    var enc = new TextEncoder(), parts = [], cen = [], off = 0, now = new Date();
+    var dt = ((now.getHours() << 11) | (now.getMinutes() << 5) | (now.getSeconds() >> 1)) & 0xFFFF;
+    var dd = (((now.getFullYear() - 1980) << 9) | ((now.getMonth() + 1) << 5) | now.getDate()) & 0xFFFF;
+    entries.forEach(function(e){
+      var nm = enc.encode(e.name), crc = crc32(e.data), sz = e.data.length;
+      var h = new DataView(new ArrayBuffer(30));
+      h.setUint32(0, 0x04034b50, true); h.setUint16(4, 20, true); h.setUint16(6, 0x0800, true); h.setUint16(8, 0, true);
+      h.setUint16(10, dt, true); h.setUint16(12, dd, true); h.setUint32(14, crc, true); h.setUint32(18, sz, true); h.setUint32(22, sz, true);
+      h.setUint16(26, nm.length, true); h.setUint16(28, 0, true);
+      parts.push(h.buffer, nm, e.data);
+      var c = new DataView(new ArrayBuffer(46));
+      c.setUint32(0, 0x02014b50, true); c.setUint16(4, 20, true); c.setUint16(6, 20, true); c.setUint16(8, 0x0800, true); c.setUint16(10, 0, true);
+      c.setUint16(12, dt, true); c.setUint16(14, dd, true); c.setUint32(16, crc, true); c.setUint32(20, sz, true); c.setUint32(24, sz, true);
+      c.setUint16(28, nm.length, true); c.setUint32(42, off, true);
+      cen.push(c.buffer, nm);
+      off += 30 + nm.length + sz;
+    });
+    var cs = 0; cen.forEach(function(b){ cs += b.byteLength !== undefined ? b.byteLength : b.length; });
+    var end = new DataView(new ArrayBuffer(22));
+    end.setUint32(0, 0x06054b50, true); end.setUint16(8, entries.length, true); end.setUint16(10, entries.length, true);
+    end.setUint32(12, cs, true); end.setUint32(16, off, true);
+    return new Blob(parts.concat(cen, [end.buffer]), { type:"application/zip" });
+  }
+  function bkSafe(s){
+    s = String(s || "").replace(/[\\/:*?"<>|\u0000-\u001f]/g, "-").replace(/^\.+/, "").trim().slice(0, 80);
+    return s || "Sans titre";
+  }
+  function bkDownload(blob, name){
+    var u = URL.createObjectURL(blob), a = document.createElement("a");
+    a.href = u; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function(){ URL.revokeObjectURL(u); }, 4000);
+  }
+  function bkData(){
+    memFlush();
+    var o = dataOf(state); o.savedAt = new Date().toISOString(); o.app = "vesper";
+    o.files = []; state.notes.forEach(function(n){ (n.files || []).forEach(function(a){ o.files.push({ note:n.id, id:a.id, name:a.name, size:a.size, path:attPath(a) }); }); });
+    return o;
+  }
+  function bkFolderPath(fid){
+    var seen = {}, parts = [];
+    while (fid && !seen[fid]){
+      seen[fid] = 1; var f = null;
+      for (var i = 0; i < state.folders.length; i++) if (state.folders[i].id === fid) f = state.folders[i];
+      if (!f) break; parts.unshift(bkSafe(f.name)); fid = f.parent;
+    }
+    return parts.length ? parts.join("/") : "Boîte de réception";
+  }
+  function bkExportZip(say){
+    var enc = new TextEncoder(), entries = [], used = {}, missing = [], jobs = [], data = bkData();
+    entries.push({ name:"vesper-data.json", data:enc.encode(JSON.stringify(data, null, 1)) });
+    function uniq(p){ var q = p, k = 2; while (used[q.toLowerCase()]){ q = p.replace(/(\.[^./]+)?$/, " (" + k + ")$1"); k++; } used[q.toLowerCase()] = 1; return q; }
+    state.notes.forEach(function(n){
+      var lines = String(n.text || "").split("\n"), title = lines[0].trim() || "Sans titre", rest = lines.slice(1).join("\n").trim();
+      var base = "Memoria/" + bkFolderPath(n.folder) + "/" + bkSafe(title);
+      var md = uniq(base + ".md");
+      entries.push({ name:md, data:enc.encode("# " + title + "\n\n" + rest + "\n") });
+      (n.files || []).forEach(function(a){ jobs.push({ a:a, dir:md.replace(/\.md$/, "") + " - fichiers/" }); });
+    });
+    var done = 0, chain = Promise.resolve();
+    jobs.forEach(function(j){
+      chain = chain.then(function(){
+        say("Récupération des fichiers joints : " + (done + 1) + " sur " + jobs.length + "…");
+        return fGet(j.a.id).then(function(b){ return b || (ghOn() ? fileFetchRemote(j.a) : null); })
+          .then(function(b){ return b ? b.arrayBuffer() : null; })
+          .catch(function(){ return null; })
+          .then(function(buf){
+            done++;
+            if (!buf){ missing.push(j.a.name); return; }
+            entries.push({ name:uniq(j.dir + bkSafe(j.a.name)), data:new Uint8Array(buf) });
+          });
+      });
+    });
+    return chain.then(function(){
+      if (missing.length) entries.push({ name:"FICHIERS-MANQUANTS.txt", data:enc.encode("Ces fichiers joints n'ont pas pu être récupérés (hors ligne ou absents) :\n" + missing.join("\n") + "\n") });
+      bkDownload(zipBuild(entries), "vesper-export-" + todayIso() + ".zip");
+      return { notes:state.notes.length, files:jobs.length - missing.length, missing:missing.length };
+    });
+  }
+  function bkCount(o){
+    return COLLS.filter(function(c){ return c !== "prefs" && Array.isArray(o[c]) && o[c].length; }).map(function(c){
+      var L = { tasks:"tâches", habits:"habitudes", notes:"notes", folders:"dossiers", goals:"objectifs", txs:"opérations", budgets:"budgets", savings:"épargnes", workouts:"séances", metrics:"mesures", asks:"demandes" };
+      return o[c].length + " " + (o[c].length === 1 ? L[c].slice(0, -1) : L[c]);
+    }).join(", ") || "aucune donnée";
+  }
+  function bkValid(o){
+    return !!(o && typeof o === "object" && COLLS.some(function(c){ return Array.isArray(o[c]); }));
+  }
+  function bkPut(name, obj){
+    return ghFetch("/contents/backups/" + name, "PUT", JSON.stringify({ message:"sauvegarde " + name, content:ghB64(JSON.stringify(obj)) }));
+  }
+  function bkList(){
+    return ghFetch("/contents/backups", "GET").then(function(l){
+      return (Array.isArray(l) ? l : []).filter(function(x){ return /\.json$/.test(x.name); }).sort(function(a, b){ return a.name < b.name ? 1 : -1; });
+    }).catch(function(err){ if (err.message === "404") return []; throw err; });
+  }
+  function bkPrune(){
+    return bkList().then(function(l){
+      var dated = l.filter(function(x){ return /^\d{4}-\d\d-\d\d\.json$/.test(x.name); });
+      var chain = Promise.resolve();
+      dated.slice(BK_KEEP).forEach(function(x){
+        chain = chain.then(function(){ return ghFetch("/contents/backups/" + x.name, "DELETE", JSON.stringify({ message:"nettoyage " + x.name, sha:x.sha })); });
+      });
+      return chain;
+    });
+  }
+  function bkDaily(force){
+    if (!ghOn()) return Promise.resolve(false);
+    var today = todayIso(), last = "";
+    try{ last = localStorage.getItem(BK_KEY) || ""; }catch(e){}
+    if (!force && last === today) return Promise.resolve(false);
+    var o = bkData();
+    if (!COLLS.some(function(c){ return c !== "prefs" && (o[c] || []).length; })) return Promise.resolve(false);
+    return bkPut(today + ".json", o).catch(function(err){
+      if (err.message !== "conflict") throw err;
+      if (!force) return;
+      return ghFetch("/contents/backups/" + today + ".json", "GET").then(function(j){
+        return ghFetch("/contents/backups/" + today + ".json", "PUT", JSON.stringify({ message:"sauvegarde " + today, content:ghB64(JSON.stringify(o)), sha:j.sha }));
+      });
+    }).then(function(){
+      try{ localStorage.setItem(BK_KEY, today); }catch(e){}
+      return bkPrune().catch(function(){}).then(function(){ return true; });
+    });
+  }
+  function bkRestore(obj, say){
+    var pre = ghOn() ? bkPut("avant-restauration-" + new Date().toISOString().replace(/[:.]/g, "-") + ".json", bkData()).catch(function(){}) : Promise.resolve();
+    return pre.then(function(){
+      var now = Date.now();
+      COLLS.forEach(function(c){
+        state[c] = (Array.isArray(obj[c]) ? obj[c] : []).filter(function(it){ return it && typeof it.id === "string"; }).map(function(it){
+          var x = JSON.parse(JSON.stringify(it)); x.updatedAt = now; delete sync.tomb[x.id]; return x;
+        });
+      });
+      save(); persistSync();
+      renderTasks(); renderHabits(); renderNotes(); renderExtra();
+      syncNow();
+      say("Données restaurées : " + bkCount(state) + ".");
+    });
+  }
+  function bkDate(name){
+    var m = /^(\d{4})-(\d\d)-(\d\d)\.json$/.exec(name);
+    if (m) return dFr(m[1] + "-" + m[2] + "-" + m[3], true);
+    return name.replace(/\.json$/, "").replace("avant-restauration-", "Avant restauration ").replace(/T.*/, "");
+  }
+  function renderBackup(){
+    var root = $("bk-root"); if (!root) return;
+    root.textContent = "";
+    var msg = el("p","sub xmsg"); msg.setAttribute("role", "status");
+    function say(t){ msg.textContent = t; }
+    var row = el("div","act"); row.style.justifyContent = "flex-start";
+    var bz = el("button","btn","Exporter tout (zip)"); bz.type = "button";
+    bz.addEventListener("click", function(){
+      bz.disabled = true; say("Préparation de l'export…");
+      bkExportZip(say).then(function(r){ say("Export téléchargé : données, " + r.notes + " notes en Markdown et " + r.files + " fichier" + (r.files > 1 ? "s" : "") + " joint" + (r.files > 1 ? "s" : "") + (r.missing ? ". " + r.missing + " introuvable" + (r.missing > 1 ? "s" : "") + " (voir FICHIERS-MANQUANTS.txt)." : ".")); })
+        .catch(function(){ say("L'export a échoué. Réessaie."); }).then(function(){ bz.disabled = false; });
+    });
+    var bj = el("button","btn ghost","Données seules (JSON)"); bj.type = "button";
+    bj.addEventListener("click", function(){ bkDownload(new Blob([JSON.stringify(bkData(), null, 1)], { type:"application/json" }), "vesper-donnees-" + todayIso() + ".json"); say("Fichier JSON téléchargé."); });
+    var bi = el("button","btn ghost","Restaurer depuis un JSON"); bi.type = "button";
+    var fi = document.createElement("input"); fi.type = "file"; fi.accept = ".json,application/json"; fi.hidden = true; fi.setAttribute("aria-label", "Fichier JSON à restaurer");
+    bi.addEventListener("click", function(){ fi.click(); });
+    var pend = el("div","xline"); pend.hidden = true;
+    fi.addEventListener("change", function(){
+      var f = fi.files && fi.files[0]; fi.value = ""; if (!f) return;
+      f.text().then(function(t){
+        var o; try{ o = JSON.parse(t); }catch(e){ o = null; }
+        if (!bkValid(o)){ say("Ce fichier n'est pas une sauvegarde Vesper valide."); pend.hidden = true; return; }
+        pend.textContent = ""; pend.hidden = false;
+        pend.appendChild(el("span","xname2","Contenu du fichier : " + bkCount(o) + ". Il remplacera tes données actuelles."));
+        pend.appendChild(twoStep("Restaurer", "Confirmer le remplacement", function(){ pend.hidden = true; bkRestore(o, say); }));
+        say("");
+      });
+    });
+    row.appendChild(bz); row.appendChild(bj); row.appendChild(bi); row.appendChild(fi);
+    root.appendChild(row); root.appendChild(pend); root.appendChild(msg);
+    var h = el("h3", null, "Sauvegardes automatiques"); h.style.marginTop = "12px"; root.appendChild(h);
+    if (!ghOn()){ root.appendChild(el("p","empty","Active la synchronisation GitHub pour avoir une sauvegarde automatique chaque jour (les " + BK_KEEP + " dernières sont gardées).")); return; }
+    var info = el("p","sub","Une copie des données est déposée dans ton dépôt une fois par jour, à la première synchronisation. Les " + BK_KEEP + " dernières sont gardées. Les fichiers joints restent dans le dossier files du dépôt.");
+    root.appendChild(info);
+    var nowb = el("button","btn ghost","Sauvegarder maintenant"); nowb.type = "button";
+    nowb.addEventListener("click", function(){
+      nowb.disabled = true; say("Sauvegarde…");
+      bkDaily(true).then(function(){ say("Sauvegarde du jour enregistrée."); renderBackup(); })
+        .catch(function(){ say("Sauvegarde impossible pour l'instant."); }).then(function(){ nowb.disabled = false; });
+    });
+    var act = el("div","act"); act.style.justifyContent = "flex-start"; act.appendChild(nowb); root.appendChild(act);
+    var box = el("div","xdone"); box.appendChild(el("p","sub","Chargement de la liste…")); root.appendChild(box);
+    bkList().then(function(l){
+      box.textContent = "";
+      if (!l.length){ box.appendChild(el("p","empty","Aucune sauvegarde pour l'instant : la première arrivera à la prochaine synchronisation.")); return; }
+      l.forEach(function(x){
+        var r = el("div","xline"); r.appendChild(el("span","xname2", bkDate(x.name)));
+        r.appendChild(twoStep("Restaurer", "Confirmer le remplacement", function(){
+          say("Lecture de la sauvegarde…");
+          ghFetch("/contents/backups/" + x.name, "GET").then(function(j){
+            var o = JSON.parse(ghUnb64(j.content)); if (!bkValid(o)) throw new Error("bad");
+            return bkRestore(o, say);
+          }).catch(function(){ say("Impossible de lire cette sauvegarde."); });
+        }));
+        box.appendChild(r);
+      });
+    }).catch(function(){ box.textContent = ""; box.appendChild(el("p","empty","Liste indisponible pour l'instant (hors ligne ?).")); });
+  }
 
   // ============ onglets : Life Center, Finance, Santé, Bureau ============
   var xid_n = 0;
