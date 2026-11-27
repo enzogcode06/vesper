@@ -272,6 +272,14 @@ dialog::backdrop{background:rgba(8,9,10,.5)}
 #view-notes.mdrop .mem{outline:2px dashed var(--accent); outline-offset:6px; border-radius:14px}
 
 /* onglets Life Center, Finance, Santé, Bureau */
+.xsumrows{display:flex; flex-direction:column}
+.xsumrow{display:flex; align-items:center; gap:14px; width:100%; min-height:56px; padding:10px 4px; background:none; border:0; border-top:1px solid var(--line); text-align:left; color:inherit}
+.xsumrow:hover{background:var(--raised)}
+.xsumrow .k{flex:0 0 84px; font-size:13.5px; color:var(--muted)}
+.xsumrow .v{flex:1 1 auto; min-width:0; font-size:15.5px; overflow-wrap:anywhere}
+.xsumrow .v.bad{color:#d64545}
+.xsumrow .go{flex:0 0 auto; color:var(--muted); font-size:18px}
+.xquick{margin-top:6px}
 .xcard>.xchip,.xcard>.btn{align-self:flex-start}
 .xroot{display:flex; flex-direction:column; gap:44px}
 .xsec{display:flex; flex-direction:column; gap:16px}
@@ -442,6 +450,8 @@ h4.xname{font-family:var(--sans); font-size:16px; font-weight:600; line-height:1
       </div>
       <div class="habits" id="habit-grid"></div>
     </section>
+
+    <section class="xsec" id="today-sum" aria-labelledby="h-sum" hidden></section>
 
     <section class="panel note" aria-labelledby="h-note">
       <div class="left">
@@ -3519,7 +3529,86 @@ h4.xname{font-family:var(--sans); font-size:16px; font-weight:600; line-height:1
     root.appendChild(board);
   }
 
+  // ---------- Aujourd'hui : résumé du jour ----------
+  function sumRows(){
+    var rows = [], today = todayIso();
+    // objectifs en retard ou proches
+    state.goals.filter(function(g){ return !g.done && g.due && daysBetween(today, g.due) <= 14; })
+      .sort(function(a, b){ return a.due < b.due ? -1 : 1; }).slice(0, 3).forEach(function(g){
+        var due = lifeDue(g), st = g.steps || [], dn = st.filter(function(x){ return x.d; }).length;
+        rows.push({ k:"Objectif", v:g.title + " : " + due.t + (st.length ? ", " + dn + " étape" + (dn > 1 ? "s" : "") + " sur " + st.length : ""), bad:due.late, tab:"tab-life" });
+      });
+    // budget
+    var tot = finTotals(finTx(ymOf(today)));
+    state.budgets.forEach(function(b){
+      var sp = tot.by[b.cat] || 0;
+      if (sp >= b.amount * 0.8) rows.push({ k:"Budget", v:b.cat + " : " + eur(sp) + " sur " + eur(b.amount) + (sp > b.amount ? ", dépassé" : ""), bad:sp > b.amount, tab:"tab-finance" });
+    });
+    // sport
+    if (state.workouts.length){
+      var goal = Math.max(1, +prefOf().weeklySessions || 3), n = weekStats(monStart(today)).n;
+      rows.push({ k:"Sport", v: n >= goal ? "Objectif atteint, " + n + " séances sur " + goal : n + " séance" + (n > 1 ? "s" : "") + " sur " + goal + ", encore " + (goal - n) + " cette semaine", bad:false, tab:"tab-sante" });
+    }
+    // bureau
+    var ao = state.asks.filter(function(a){ return a.status !== "done"; });
+    if (ao.length){
+      var doing = ao.filter(function(a){ return a.status === "doing"; }).length;
+      rows.push({ k:"Bureau", v:ao.length + (ao.length > 1 ? " demandes" : " demande") + " ouverte" + (ao.length > 1 ? "s" : "") + (doing ? ", dont " + doing + " en cours" : ""), bad:false, tab:"tab-bureau" });
+    }
+    return rows;
+  }
+  var sumNote = "", sumKind = "dep";
+  function renderSummary(){
+    var sec = $("today-sum"); if (!sec) return;
+    sec.textContent = "";
+    var rows = sumRows();
+    var h = el("div","rowhead"), h2 = el("h2", null, "Cette semaine"); h2.id = "h-sum"; h.appendChild(h2); sec.appendChild(h);
+    if (rows.length){
+      var box = el("div","xsumrows");
+      rows.forEach(function(r){
+        var b = el("button","xsumrow"); b.type = "button";
+        b.appendChild(el("span","k", r.k)); b.appendChild(el("span","v" + (r.bad ? " bad" : ""), r.v)); b.appendChild(el("span","go","›"));
+        b.setAttribute("aria-label", r.k + " : " + r.v + ". Ouvrir.");
+        b.addEventListener("click", function(){ var t = $(r.tab); if (t) show(t); });
+        box.appendChild(b);
+      });
+      sec.appendChild(box);
+    }
+    // ajout rapide
+    var f = el("form","xform xquick"), kind = sumKind;
+    var seg = el("div","xseg"); seg.setAttribute("role", "group"); seg.setAttribute("aria-label", "Type d'ajout rapide");
+    var bd = el("button", null, "Dépense"), bs = el("button", null, "Séance"); bd.type = bs.type = "button";
+    var a = xInput("text", "Montant en €", "Montant de la dépense"); a.inputMode = "decimal";
+    var c = xSelect(FIN_CATS, "Courses", "Catégorie de la dépense");
+    var sp = xSelect(SPORTS, "Course", "Type de séance"), du = xInput("number", "Durée en min", "Durée de la séance en minutes"); du.min = "1"; du.inputMode = "numeric";
+    var sb = el("button","btn","Ajouter"); sb.type = "submit";
+    var msg = el("div","xmsg"); msg.setAttribute("aria-live", "polite");
+    function setK(k){
+      kind = sumKind = k; bd.setAttribute("aria-pressed", k === "dep" ? "true" : "false"); bs.setAttribute("aria-pressed", k === "sess" ? "true" : "false");
+      a.hidden = c.hidden = k !== "dep"; sp.hidden = du.hidden = k !== "sess"; msg.textContent = "";
+    }
+    bd.addEventListener("click", function(){ setK("dep"); }); bs.addEventListener("click", function(){ setK("sess"); });
+    seg.appendChild(bd); seg.appendChild(bs);
+    var r = el("div","xrow"); r.appendChild(seg); r.appendChild(a); r.appendChild(c); r.appendChild(sp); r.appendChild(du); r.appendChild(sb);
+    f.appendChild(r); f.appendChild(msg); setK(kind); msg.textContent = sumNote; sumNote = "";
+    f.addEventListener("submit", function(e){
+      e.preventDefault();
+      if (kind === "dep"){
+        var v = numOf(a.value); if (!(v > 0)){ msg.textContent = "Saisis un montant supérieur à 0."; return; }
+        state.txs.push({ id:nid("x"), kind:"dep", amount:Math.round(v * 100) / 100, label:"", cat:c.value, date:todayIso(), at:Date.now() });
+        sumNote = "Dépense ajoutée : " + eur(v) + ", " + c.value + "."; save(); renderExtra();
+      } else {
+        var m = Math.round(+du.value);
+        state.workouts.push({ id:nid("w"), type:sp.value, minutes: m > 0 ? m : 0, date:todayIso(), note:"", at:Date.now() });
+        sumNote = "Séance ajoutée : " + sp.value + (m > 0 ? ", " + m + " min" : "") + "."; save(); renderExtra();
+      }
+    });
+    sec.appendChild(f);
+    sec.hidden = false;
+  }
+
   function renderExtra(which){
+    renderSummary();
     if (!which || which === "life") renderLife();
     if (!which || which === "finance") renderFinance();
     if (!which || which === "sante") renderSante();
