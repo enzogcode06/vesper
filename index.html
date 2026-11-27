@@ -324,6 +324,15 @@ h4.xname{font-family:var(--sans); font-size:16px; font-weight:600; line-height:1
 .xbar{height:8px; border-radius:999px; background:var(--dot-off); overflow:hidden}
 .xbar span{display:block; height:100%; border-radius:999px; background:var(--accent); transition:width .25s}
 .xbar span.over{background:#d64545}
+.xgacc{padding:0; gap:0}
+.xgacc>summary{list-style:none; display:flex; align-items:center; gap:12px; min-height:56px; padding:6px 18px 6px 20px; cursor:pointer}
+.xgacc>summary::-webkit-details-marker{display:none}
+.xgacc>summary .xname{flex:1 1 auto; min-width:0; font-size:21px}
+.xgacc>summary .xnum{font-size:24px; flex:0 0 auto}
+.xgacc .chev{flex:0 0 auto; color:var(--muted); transition:transform .15s}
+.xgacc[open]>summary .chev{transform:rotate(180deg)}
+.xgbody{display:flex; flex-direction:column; gap:12px; padding:2px 20px 20px; border-top:1px solid var(--line); padding-top:14px}
+#life-root .xgrid{align-items:start}
 .xsteps{list-style:none; margin:0; padding:0}
 .xsteps li{display:flex; align-items:center; gap:4px; border-top:1px solid var(--line)}
 .xsteps .tkbtn{min-height:48px; padding:6px 0}
@@ -3343,19 +3352,27 @@ h4.xname{font-family:var(--sans); font-size:16px; font-weight:600; line-height:1
     if (d === 1) return { t:"échéance demain", late:false };
     return { t:"dans " + d + " jours · " + dFr(g.due), late:false };
   }
+  var LIFE_OPEN_KEY = KEY + "-lifeopen", lifeOpen = {};
+  try{ lifeOpen = JSON.parse(localStorage.getItem(LIFE_OPEN_KEY) || "{}") || {}; }catch(e){}
+  function lifeOpenSave(){ try{ localStorage.setItem(LIFE_OPEN_KEY, JSON.stringify(lifeOpen)); }catch(e){} }
   function lifeGoalCard(g){
-    var card = el("article","xcard"), head = el("div","xhead");
-    var tt = el("div","xtt"); tt.appendChild(el("h3","xname", g.title));
-    var meta = el("div","sub"), due = lifeDue(g);
-    meta.appendChild(el("span","xchip", g.area || "Perso"));
-    var dsp = el("span", due.late ? "xlate" : null, " " + due.t); meta.appendChild(dsp);
-    tt.appendChild(meta); head.appendChild(tt);
     var steps = g.steps || [], done = steps.filter(function(x){ return x.d; }).length;
-    var pct = steps.length ? done / steps.length * 100 : (g.done ? 100 : 0);
-    var pn = el("div","xpct"); pn.appendChild(el("span","xnum", Math.round(pct) + "%")); head.appendChild(pn);
-    card.appendChild(head);
-    card.appendChild(xBar(pct, false, "Avancement de « " + g.title + " »"));
-    if (steps.length) card.appendChild(el("div","sub", done + " sur " + steps.length + (steps.length > 1 ? " étapes" : " étape")));
+    var pct = steps.length ? done / steps.length * 100 : (g.done ? 100 : 0), due = lifeDue(g);
+    var card = el("details","xcard xgacc"); card.open = !!lifeOpen[g.id];
+    card.addEventListener("toggle", function(){ if (card.open) lifeOpen[g.id] = 1; else delete lifeOpen[g.id]; lifeOpenSave(); });
+    var sm = el("summary");
+    sm.appendChild(el("h3","xname", g.title));
+    sm.appendChild(el("span","xnum" + (due.late ? " xlate" : ""), Math.round(pct) + "%"));
+    sm.insertAdjacentHTML("beforeend", '<svg class="chev" aria-hidden="true" width="18" height="18" viewBox="0 0 18 18"><path d="M4 7l5 5 5-5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>');
+    sm.setAttribute("aria-label", g.title + ", " + Math.round(pct) + " pour cent");
+    card.appendChild(sm);
+    var body = el("div","xgbody");
+    var meta = el("div","sub");
+    meta.appendChild(el("span","xchip", g.area || "Perso"));
+    meta.appendChild(el("span", due.late ? "xlate" : null, " " + due.t));
+    body.appendChild(meta);
+    body.appendChild(xBar(pct, false, "Avancement de « " + g.title + " »"));
+    if (steps.length) body.appendChild(el("div","sub", done + " sur " + steps.length + (steps.length > 1 ? " étapes" : " étape")));
     var ul = el("ul","xsteps");
     steps.forEach(function(st, i){
       var li = el("li"), b = el("button","tkbtn"); b.type = "button"; b.setAttribute("aria-pressed", st.d ? "true" : "false");
@@ -3366,20 +3383,21 @@ h4.xname{font-family:var(--sans); font-size:16px; font-weight:600; line-height:1
       li.appendChild(killBtn("Supprimer l'étape « " + st.t + " »", function(){ g.steps = steps.filter(function(_, k){ return k !== i; }); xSave("life"); }));
       ul.appendChild(li);
     });
-    card.appendChild(ul);
+    body.appendChild(ul);
     var f = el("form","xadd"), inp = xInput("text", "Ajouter une étape", "Nouvelle étape de « " + g.title + " »");
     var ab = el("button","btn ghost","Ajouter"); ab.type = "submit"; f.appendChild(inp); f.appendChild(ab);
     f.addEventListener("submit", function(e){
       e.preventDefault(); var v = inp.value.trim(); if (!v) return;
       g.steps = steps.concat([{ t:v, d:false }]); xSave("life");
     });
-    card.appendChild(f);
+    body.appendChild(f);
     var act = el("div","mact");
     var fin = el("button","btn ghost", "Marquer comme terminé"); fin.type = "button";
     fin.addEventListener("click", function(){ g.done = true; g.doneAt = todayIso(); xSave("life"); });
     act.appendChild(fin);
-    act.appendChild(twoStep("Supprimer", "Confirmer la suppression", function(){ state.goals = state.goals.filter(function(x){ return x.id !== g.id; }); xSave("life"); }));
-    card.appendChild(act);
+    act.appendChild(twoStep("Supprimer", "Confirmer la suppression", function(){ delete lifeOpen[g.id]; lifeOpenSave(); state.goals = state.goals.filter(function(x){ return x.id !== g.id; }); xSave("life"); }));
+    body.appendChild(act);
+    card.appendChild(body);
     return card;
   }
   function lifeHabits(){
@@ -3416,7 +3434,8 @@ h4.xname{font-family:var(--sans); font-size:16px; font-weight:600; line-height:1
     f.appendChild(t); f.appendChild(row2);
     f.addEventListener("submit", function(e){
       e.preventDefault(); var v = t.value.trim(); if (!v) return;
-      state.goals.push({ id: nid("g"), title:v, area:a.value, due:d.value || "", steps:[], done:false, at:Date.now() });
+      var ng = { id: nid("g"), title:v, area:a.value, due:d.value || "", steps:[], done:false, at:Date.now() };
+      state.goals.push(ng); lifeOpen[ng.id] = 1; lifeOpenSave();
       xSave("life");
     });
     sec.appendChild(f);
