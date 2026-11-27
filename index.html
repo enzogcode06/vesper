@@ -273,6 +273,28 @@ dialog::backdrop{background:rgba(8,9,10,.5)}
 #view-notes.mdrop .mem{outline:2px dashed var(--accent); outline-offset:6px; border-radius:14px}
 
 /* onglets Life Center, Finance, Santé, Bureau */
+/* mouvement : doux, court, désactivé si l'appareil demande moins d'animations */
+@media (prefers-reduced-motion:no-preference){
+  :root{--ease:cubic-bezier(.22,.8,.24,1)}
+  .btn,.kill,.link,.habit,.tkbtn,.xsumrow,.xseg button{transition:transform .14s var(--ease), background-color .2s, border-color .2s, opacity .2s, color .2s}
+  .btn:active,.habit:active{transform:scale(.97)}
+  .tkbtn:active .box,.habit:active .mark{transform:scale(.88)}
+  .box,.mark{transition:transform .14s var(--ease), background-color .22s, border-color .22s}
+  .tklab{transition:color .25s}
+  .xcard,.panel,.agenda,.habit{transition:border-color .2s, transform .14s var(--ease), box-shadow .25s}
+  @media (hover:hover){ .xcard:hover,.habit:hover{border-color:var(--line-strong)} }
+  .view.enter>*{animation:rise .46s var(--ease) both; animation-delay:calc(var(--i,0) * 55ms)}
+  @keyframes rise{from{opacity:0; transform:translateY(12px)}to{opacity:1; transform:none}}
+  .box.pop,.mark.pop{animation:pop .42s var(--ease)}
+  .box.pop svg,.mark.pop svg{animation:tick .32s .06s var(--ease) both}
+  @keyframes pop{0%{transform:scale(.7)}55%{transform:scale(1.22)}100%{transform:scale(1)}}
+  @keyframes tick{from{opacity:0; transform:scale(.4) rotate(-12deg)}to{opacity:1; transform:none}}
+  .xmsg:not(:empty),.flash.on{animation:fadein .35s var(--ease)}
+  @keyframes fadein{from{opacity:0; transform:translateY(-3px)}to{opacity:1; transform:none}}
+  .xbar span{transition:width .7s var(--ease)}
+  .xstrip span.on,.week span.on{animation:dotin .4s var(--ease) both}
+  @keyframes dotin{from{transform:scale(.3); opacity:.2}to{transform:none; opacity:1}}
+}
 .acc{border-top:1px solid var(--line)}
 .acc>summary{list-style:none; display:flex; align-items:center; gap:12px; min-height:60px; cursor:pointer; padding:6px 0}
 .acc>summary::-webkit-details-marker{display:none}
@@ -1053,13 +1075,66 @@ h4.xname{font-family:var(--sans); font-size:16px; font-weight:600; line-height:1
 
   // ---------- onglets ----------
   var tabs = Array.prototype.slice.call(document.querySelectorAll('[role="tab"]'));
+  // ---------- mouvement ----------
+  var popKey = "", barPrev = {}, numPrev = {};
+  function motionOK(){ try{ return !(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches); }catch(e){ return true; } }
+  function enterView(v){
+    if (!v || !motionOK()) return;
+    v.classList.remove("enter");
+    Array.prototype.forEach.call(v.children, function(c, i){ c.style.setProperty("--i", Math.min(i, 8)); });
+    void v.offsetWidth; v.classList.add("enter");
+    clearTimeout(v._enterT); v._enterT = setTimeout(function(){ v.classList.remove("enter"); }, 1100);
+  }
+  function animNum(node, key, to, fmt){
+    var from = numPrev[key]; numPrev[key] = to;
+    if (from == null) from = 0;
+    if (!motionOK() || from === to){ node.textContent = fmt(to); return; }
+    var t0 = null, dur = 650;
+    node.textContent = fmt(from);
+    function step(t){
+      if (t0 === null) t0 = t;
+      var k = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - k, 3);
+      node.textContent = fmt(from + (to - from) * e);
+      if (k < 1 && node.isConnected) requestAnimationFrame(step); else node.textContent = fmt(to);
+    }
+    requestAnimationFrame(step);
+  }
+  function accAnim(d, bodySel){
+    var sm = d.querySelector("summary"); if (!sm) return;
+    sm.addEventListener("click", function(e){
+      if (!motionOK()) return;
+      var body = d.querySelector(bodySel); if (!body || !body.animate) return;
+      e.preventDefault();
+      if (d._anim){ try{ d._anim.cancel(); }catch(x){} d._anim = null; }
+      var cs = getComputedStyle(body), pt = cs.paddingTop, pb = cs.paddingBottom, opening = !d.open;
+      if (opening) d.open = true;
+      var h = body.offsetHeight;
+      body.style.overflow = "hidden";
+      var from = opening ? { height:"0px", paddingTop:"0px", paddingBottom:"0px", opacity:0 } : { height:h + "px", paddingTop:pt, paddingBottom:pb, opacity:1 };
+      var to = opening ? { height:h + "px", paddingTop:pt, paddingBottom:pb, opacity:1 } : { height:"0px", paddingTop:"0px", paddingBottom:"0px", opacity:0 };
+      var a = body.animate([from, to], { duration: opening ? 300 : 220, easing: opening ? "cubic-bezier(.22,.8,.24,1)" : "ease-in" });
+      d._anim = a;
+      a.onfinish = function(){ body.style.overflow = ""; d._anim = null; if (!opening) d.open = false; };
+      a.oncancel = function(){ body.style.overflow = ""; };
+    });
+  }
   function show(tab){
+    var was = tab && tab.getAttribute("aria-selected") === "true";
     tabs.forEach(function(t){
       var on = t === tab;
       t.setAttribute("aria-selected", on ? "true" : "false");
       var v = $(t.getAttribute("aria-controls"));
       if (v) v.hidden = !on;
     });
+    if (!was && tab){
+      var xw = { "tab-life":"life", "tab-finance":"finance", "tab-sante":"sante" }[tab.id], xv = $(tab.getAttribute("aria-controls"));
+      if (xw && xv && motionOK()){
+        // repartir de zéro pour que barres et compteurs s'animent à l'arrivée, sans toucher à une saisie en cours
+        var dirty = Array.prototype.some.call(xv.querySelectorAll("input,textarea"), function(i){ return i.placeholder && i.value; });
+        if (!dirty){ barPrev = {}; numPrev = {}; renderExtra(xw); }
+      }
+      enterView(xv);
+    }
     window.scrollTo({ top: 0, behavior: "smooth" });
     if (tab && tab.scrollIntoView && tab.id !== "tab-reglages"){ try{ tab.scrollIntoView({ inline:"center", block:"nearest" }); }catch(e){} }
     if (tab && tab.id === "tab-calendrier") loadCalMonth();
@@ -1072,6 +1147,7 @@ h4.xname{font-family:var(--sans); font-size:16px; font-weight:600; line-height:1
     try{ st = JSON.parse(localStorage.getItem(K) || "{}") || {}; }catch(e){}
     Array.prototype.forEach.call(document.querySelectorAll("details.acc"), function(d){
       if (st[d.id]) d.open = true;
+      accAnim(d, ".accbody");
       d.addEventListener("toggle", function(){
         st[d.id] = d.open ? 1 : 0;
         try{ localStorage.setItem(K, JSON.stringify(st)); }catch(e){}
@@ -1111,7 +1187,9 @@ h4.xname{font-family:var(--sans); font-size:16px; font-weight:600; line-height:1
       if (t.due) wrap.appendChild(el("span","tkdue", t.due));
 
       b.appendChild(box); b.appendChild(wrap);
+      if (t.done && popKey === "t:" + t.id) box.classList.add("pop");
       b.addEventListener("click", function(){
+        popKey = "t:" + t.id;
         t.done = !t.done;
         if (t.done) t.doneDay = iso(new Date()); else delete t.doneDay;
         save(); renderTasks();
@@ -1124,6 +1202,7 @@ h4.xname{font-family:var(--sans); font-size:16px; font-weight:600; line-height:1
       }));
       ul.appendChild(li);
     });
+    popKey = "";
     $("task-hint").hidden = !state.tasks.some(function(t){ return t.done; });
     var n = state.tasks.filter(function(t){ return !t.done; }).length;
     $("task-count").textContent = state.tasks.length === 0 ? "Liste vide"
@@ -1158,6 +1237,7 @@ h4.xname{font-family:var(--sans); font-size:16px; font-weight:600; line-height:1
       mk.setAttribute("aria-hidden","true");
       mk.innerHTML = '<svg width="12" height="12" style="color:var(--bg)"><use href="#ck"/></svg>';
       top.appendChild(mk);
+      if (done && popKey === "h:" + h.id) mk.classList.add("pop");
 
       var big = el("span","big");
       big.appendChild(el("span","n", String(s)));
@@ -1174,12 +1254,14 @@ h4.xname{font-family:var(--sans); font-size:16px; font-weight:600; line-height:1
 
       b.appendChild(top); b.appendChild(big); b.appendChild(wk);
       b.addEventListener("click", function(){
+        popKey = "h:" + h.id;
         if (h.dates.indexOf(today) !== -1) h.dates = h.dates.filter(function(x){ return x !== today; });
         else h.dates.push(today);
         save(); renderHabits();
       });
       g.appendChild(b);
     });
+    popKey = "";
     var c = state.habits.filter(function(h){ return h.dates.indexOf(today) !== -1; }).length;
     $("habit-count").textContent = c + " sur " + state.habits.length + " aujourd'hui";
   }
@@ -3324,7 +3406,13 @@ h4.xname{font-family:var(--sans); font-size:16px; font-weight:600; line-height:1
   function xBar(pct, over, label){
     var b = el("div","xbar"); b.setAttribute("role", "progressbar"); b.setAttribute("aria-valuemin", "0"); b.setAttribute("aria-valuemax", "100");
     b.setAttribute("aria-valuenow", String(Math.round(Math.min(100, pct)))); if (label) b.setAttribute("aria-label", label);
-    var f = el("span"); f.style.width = Math.max(0, Math.min(100, pct)) + "%"; if (over) f.className = "over";
+    var f = el("span"), fin = Math.max(0, Math.min(100, pct)); if (over) f.className = "over";
+    var key = label || "", prev = barPrev[key]; barPrev[key] = fin;
+    if (!motionOK() || prev === fin){ f.style.width = fin + "%"; }
+    else {
+      f.style.width = (prev == null ? 0 : prev) + "%";
+      requestAnimationFrame(function(){ requestAnimationFrame(function(){ f.style.width = fin + "%"; }); });
+    }
     b.appendChild(f); return b;
   }
   function xSec(title, sub){
@@ -3359,6 +3447,7 @@ h4.xname{font-family:var(--sans); font-size:16px; font-weight:600; line-height:1
     var steps = g.steps || [], done = steps.filter(function(x){ return x.d; }).length;
     var pct = steps.length ? done / steps.length * 100 : (g.done ? 100 : 0), due = lifeDue(g);
     var card = el("details","xcard xgacc"); card.open = !!lifeOpen[g.id];
+    accAnim(card, ".xgbody");
     card.addEventListener("toggle", function(){ if (card.open) lifeOpen[g.id] = 1; else delete lifeOpen[g.id]; lifeOpenSave(); });
     var sm = el("summary");
     sm.appendChild(el("h3","xname", g.title));
@@ -3378,7 +3467,8 @@ h4.xname{font-family:var(--sans); font-size:16px; font-weight:600; line-height:1
       var li = el("li"), b = el("button","tkbtn"); b.type = "button"; b.setAttribute("aria-pressed", st.d ? "true" : "false");
       b.innerHTML = '<span class="box"><svg width="12" height="12" aria-hidden="true" style="color:var(--bg)"><use href="#ck"/></svg></span>';
       b.appendChild(el("span","tklab", st.t));
-      b.addEventListener("click", function(){ st.d = !st.d; g.steps = steps.slice(); xSave("life"); });
+      if (st.d && popKey === "s:" + g.id + ":" + i) b.firstChild.classList.add("pop");
+      b.addEventListener("click", function(){ st.d = !st.d; g.steps = steps.slice(); popKey = "s:" + g.id + ":" + i; xSave("life"); });
       li.appendChild(b);
       li.appendChild(killBtn("Supprimer l'étape « " + st.t + " »", function(){ g.steps = steps.filter(function(_, k){ return k !== i; }); xSave("life"); }));
       ul.appendChild(li);
@@ -3457,6 +3547,7 @@ h4.xname{font-family:var(--sans); font-size:16px; font-weight:600; line-height:1
     }
     root.appendChild(sec);
     root.appendChild(lifeHabits());
+    popKey = "";
   }
 
   // ---------- Finance ----------
@@ -3488,7 +3579,8 @@ h4.xname{font-family:var(--sans); font-size:16px; font-weight:600; line-height:1
     // résumé
     var sum = el("div","xsum");
     [["Revenus", tot.rev, ""], ["Dépenses", tot.dep, ""], ["Solde du mois", tot.rev - tot.dep, tot.rev - tot.dep < 0 ? "neg" : ""]].forEach(function(c){
-      var k = el("div","xcard xk"); k.appendChild(el("span","sub", c[0])); k.appendChild(el("span","xnum big " + c[2], eur(c[1]))); sum.appendChild(k);
+      var k = el("div","xcard xk"), nn = el("span","xnum big " + c[2], eur(c[1])); k.appendChild(el("span","sub", c[0])); k.appendChild(nn);
+      animNum(nn, "fin:" + c[0], c[1], eur); sum.appendChild(k);
     });
     root.appendChild(sum);
     // ajout
@@ -3984,6 +4076,7 @@ h4.xname{font-family:var(--sans); font-size:16px; font-weight:600; line-height:1
   renderNotes();
   renderExtra();
   initSettings();
+  enterView($("view-today"));
   renderAgendaEntry();
   initWxDialog();
   loadWeather();
