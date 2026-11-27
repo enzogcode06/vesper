@@ -257,6 +257,10 @@ dialog::backdrop{background:rgba(8,9,10,.5)}
 .mfile .nm{font-size:15px; font-weight:600; overflow-wrap:anywhere}
 .mfile .mt{font-size:13px; color:var(--muted)}
 .mdrop{outline:2px dashed var(--accent); outline-offset:6px; border-radius:14px}
+.mimp{border:1px solid var(--line-strong); border-radius:14px; padding:12px 14px; display:flex; flex-direction:column; gap:8px; font-size:14px; background:var(--panel)}
+.mimp[hidden]{display:none}
+.mimp .mact{margin-top:2px}
+#view-notes.mdrop .mem{outline:2px dashed var(--accent); outline-offset:6px; border-radius:14px}
 .mfiles-msg{font-size:13px; color:var(--muted); min-height:18px}
 .msec{font-size:14px; font-weight:600}
 .mlinks{display:flex; flex-wrap:wrap; gap:8px}
@@ -402,7 +406,12 @@ dialog::backdrop{background:rgba(8,9,10,.5)}
         <input id="mem-search" type="search" placeholder="Rechercher dans Memoria" autocomplete="off">
         <button class="btn ghost" id="mem-newnote" type="button">Nouvelle note</button>
         <button class="btn ghost" id="mem-newfolder" type="button">Nouveau dossier</button>
+        <button class="btn ghost" id="mem-impfiles" type="button">Importer des fichiers</button>
+        <button class="btn ghost" id="mem-impdir" type="button">Importer un dossier</button>
+        <input id="mem-impfiles-in" type="file" multiple hidden>
+        <input id="mem-impdir-in" type="file" webkitdirectory hidden>
       </div>
+      <div class="mimp" id="mem-import" aria-live="polite" hidden></div>
     </div>
     <div class="mem" id="mem" data-main="0">
       <aside class="mem-side panel" aria-label="Dossiers et notes"><div id="mem-tree"></div></aside>
@@ -1417,6 +1426,218 @@ dialog::backdrop{background:rgba(8,9,10,.5)}
   }
   qList().then(function(l){ l.forEach(function(o){ fq[o.id] = o.op; }); filesSync(); }).catch(function(){});
 
+  // ---------- import rapide : fichiers ou dossier entier ----------
+  var impBox = $("mem-import"), impTimer = null;
+  function impSkip(name){ return /^\./.test(name) || name === "Thumbs.db" || name === "desktop.ini"; }
+  function impShow(nodes){
+    impBox.textContent = "";
+    if (!nodes){ impBox.hidden = true; return; }
+    nodes.forEach(function(x){ impBox.appendChild(typeof x === "string" ? el("div", null, x) : x); });
+    impBox.hidden = false;
+  }
+  function readDirAll(reader){
+    return new Promise(function(res){
+      var all = [];
+      (function next(){
+        reader.readEntries(function(b){
+          if (!b.length) res(all); else { all = all.concat(Array.prototype.slice.call(b)); next(); }
+        }, function(){ res(all); });
+      })();
+    });
+  }
+  function entryFiles(entry, path, out){
+    if (entry.isFile) return new Promise(function(res){ entry.file(function(f){ out.push({ file:f, path:path }); res(); }, function(){ res(); }); });
+    if (entry.isDirectory){
+      if (impSkip(entry.name)) return Promise.resolve();
+      var np = path.concat([entry.name]);
+      return readDirAll(entry.createReader()).then(function(list){
+        var pr = Promise.resolve();
+        list.forEach(function(e){ pr = pr.then(function(){ return entryFiles(e, np, out); }); });
+        return pr;
+      });
+    }
+    return Promise.resolve();
+  }
+  // le DataTransfer n'est lisible que pendant l'évènement : tout est capté tout de suite
+  function dropEntries(dt){
+    var files = Array.prototype.slice.call(dt.files || []);
+    var ents = Array.prototype.slice.call(dt.items || []).map(function(it){
+      return it.kind === "file" && it.webkitGetAsEntry ? it.webkitGetAsEntry() : null;
+    });
+    var out = [];
+    if (ents.some(Boolean)){
+      var pr = Promise.resolve();
+      ents.forEach(function(e){ if (e) pr = pr.then(function(){ return entryFiles(e, [], out); }); });
+      return pr.then(function(){ return out; });
+    }
+    return Promise.resolve(files.map(function(f){ return { file:f, path:[] }; }));
+  }
+  function inputEntries(list){
+    return Array.prototype.slice.call(list || []).map(function(f){
+      var rp = f.webkitRelativePath || "";
+      return { file:f, path: rp ? rp.split("/").slice(0, -1) : [] };
+    });
+  }
+  function impBase(){
+    var v = memView();
+    if (v.type === "folder" && folderOf(v.id)) return v.id;
+    if (v.type === "note" && noteOf(v.id)) return noteFolder(noteOf(v.id));
+    return "";
+  }
+  function findFolder(parent, name){
+    var k = memNorm(name);
+    return state.folders.filter(function(f){ return (f.parent || "") === parent && memNorm(folderName(f)) === k; })[0] || null;
+  }
+  function impTitle(name){ return name.replace(/\.[^.]*$/, "").replace(/\s+/g, " ").trim() || name; }
+  function impIsText(f){ return /\.(txt|md)$/i.test(f.name) && f.size <= 200000; }
+  function impIsDup(fid, f){
+    return state.notes.some(function(n){
+      if (noteFolder(n) !== fid) return false;
+      if (impIsText(f)) return noteTitle(n) === impTitle(f.name);
+      return (n.files || []).some(function(a){ return a.name === f.name && a.size === f.size; });
+    });
+  }
+  function impPlan(entries, base){
+    var pl = { ok:[], big:[], ignored:0, dups:0, newFolders:0, bytes:0, topDirs:0 }, seen = {};
+    entries.forEach(function(e){
+      if (impSkip(e.file.name)) { pl.ignored++; return; }
+      if (e.file.size > FILE_MAX){ pl.big.push(e.file.name); return; }
+      var parent = base, fresh = false;
+      e.path.forEach(function(nm, i){
+        if (!fresh){
+          var hit = findFolder(parent, nm);
+          if (hit){ parent = hit.id; return; }
+          fresh = true; parent = null;
+        }
+        var key = e.path.slice(0, i + 1).join("/").toLowerCase();
+        if (!seen[key]){ seen[key] = 1; pl.newFolders++; }
+      });
+      if (!fresh && impIsDup(parent, e.file)){ pl.dups++; return; }
+      pl.ok.push(e); pl.bytes += e.file.size;
+    });
+    return pl;
+  }
+  function impRun(pl, base){
+    memFlush();
+    var done = { notes:0, folders:0, dups:0, failed:0 }, total = pl.ok.length, i = 0;
+    function folderFor(path){
+      var parent = base;
+      path.forEach(function(nm){
+        var hit = findFolder(parent, nm);
+        if (!hit){
+          hit = { id:uid("f"), name:nm, parent:parent, at:Date.now() };
+          state.folders.push(hit); done.folders++;
+        }
+        if (parent) state.memUi.open[parent] = true;
+        parent = hit.id;
+      });
+      return parent;
+    }
+    function one(e){
+      var f = e.file, fid = folderFor(e.path), title = impTitle(f.name);
+      if (impIsDup(fid, f)){ done.dups++; return Promise.resolve(); }
+      if (impIsText(f)){
+        return f.text().then(function(t){
+          var body = t.replace(/\r\n?/g, "\n").trim();
+          state.notes.push({ id:uid("n"), text: body ? title + "\n" + body : title, folder:fid, at:Date.now() });
+          done.notes++;
+        });
+      }
+      var id = "a" + Date.now() + Math.floor(Math.random() * 1000);
+      var att = { id:id, name:f.name, size:f.size, type:f.type || "", at:Date.now() };
+      return fSet(id, f).then(function(){
+        return qMut(function(l){ return l.concat([{ op:"put", id:id, path:attPath(att) }]); });
+      }).then(function(){
+        state.notes.push({ id:uid("n"), text:title, folder:fid, at:Date.now(), files:[att] });
+        done.notes++;
+      });
+    }
+    var chain = Promise.resolve();
+    pl.ok.forEach(function(e){
+      chain = chain.then(function(){
+        impShow(["Import en cours : " + (++i) + " sur " + total + "…"]);
+        return one(e).catch(function(){ done.failed++; });
+      });
+    });
+    return chain.then(function(){
+      save(); memRender();
+      var sum = done.notes + (done.notes > 1 ? " notes créées" : " note créée") + (done.folders ? ", " + done.folders + (done.folders > 1 ? " dossiers" : " dossier") + " créé" + (done.folders > 1 ? "s" : "") : "") + ".";
+      var extra = [];
+      if (done.dups) extra.push(done.dups + " déjà présent" + (done.dups > 1 ? "s" : "") + ", ignoré" + (done.dups > 1 ? "s" : "") + ".");
+      if (pl.big.length) extra.push("Trop gros (25 Mo maximum), non importé" + (pl.big.length > 1 ? "s" : "") + " : " + pl.big.join(", ") + ".");
+      if (pl.ignored) extra.push(pl.ignored + " fichier" + (pl.ignored > 1 ? "s" : "") + " caché" + (pl.ignored > 1 ? "s" : "") + " ignoré" + (pl.ignored > 1 ? "s" : "") + ".");
+      if (done.failed) extra.push(done.failed + " fichier" + (done.failed > 1 ? "s" : "") + " n'a pas pu être enregistré" + (done.failed > 1 ? "s" : "") + " dans ce navigateur.");
+      var head = el("div", null, "Import terminé : " + sum);
+      var close = el("button","btn ghost","Fermer"); close.type = "button";
+      close.addEventListener("click", function(){ clearInterval(impTimer); impShow(null); });
+      var up = el("div","sub");
+      impShow([head].concat(extra, [up, close]));
+      filesSync();
+      clearInterval(impTimer);
+      function tick(){
+        qList().then(function(l){
+          var n = l.filter(function(o){ return o.op === "put"; }).length;
+          if (!ghOn()) up.textContent = n ? "Les fichiers sont sur cet appareil. Ils partiront vers GitHub dès que la synchro sera configurée." : "";
+          else if (n) up.textContent = "Envoi des fichiers vers GitHub : " + n + " restant" + (n > 1 ? "s" : "") + "…";
+          else { up.textContent = "Tous les fichiers sont envoyés."; clearInterval(impTimer); }
+        }).catch(function(){});
+      }
+      tick(); impTimer = setInterval(tick, 1500);
+    });
+  }
+  function impStart(entries){
+    var base = impBase(), pl = impPlan(entries, base);
+    if (!entries.length) return;
+    if (!pl.ok.length){
+      var why = [];
+      if (pl.dups) why.push(pl.dups + " déjà présent" + (pl.dups > 1 ? "s" : "") + ".");
+      if (pl.big.length) why.push("Trop gros (25 Mo maximum) : " + pl.big.join(", ") + ".");
+      if (pl.ignored) why.push(pl.ignored + " fichier(s) caché(s) ignoré(s).");
+      var c0 = el("button","btn ghost","Fermer"); c0.type = "button"; c0.addEventListener("click", function(){ impShow(null); });
+      impShow(["Rien à importer."].concat(why, [c0]));
+      return;
+    }
+    var hasDir = entries.some(function(e){ return e.path.length; });
+    if (!hasDir && pl.ok.length <= 3){ impRun(pl, base); return; }
+    var tgt = base ? folderName(folderOf(base)) : "la boîte de réception";
+    var lines = ["Importer " + pl.ok.length + " fichier" + (pl.ok.length > 1 ? "s" : "") + " (" + attSize(pl.bytes) + ")" +
+      (pl.newFolders ? " et créer " + pl.newFolders + " dossier" + (pl.newFolders > 1 ? "s" : "") : "") + " dans « " + tgt + " » ?"];
+    if (pl.dups) lines.push(pl.dups + " déjà présent" + (pl.dups > 1 ? "s" : "") + " (ignoré" + (pl.dups > 1 ? "s" : "") + ").");
+    if (pl.big.length) lines.push("Trop gros, non importé" + (pl.big.length > 1 ? "s" : "") + " : " + pl.big.join(", ") + ".");
+    if (pl.ignored) lines.push(pl.ignored + " fichier" + (pl.ignored > 1 ? "s" : "") + " caché" + (pl.ignored > 1 ? "s" : "") + " ignoré" + (pl.ignored > 1 ? "s" : "") + ".");
+    var act = el("div","mact");
+    var go = el("button","btn","Importer"); go.type = "button";
+    var no = el("button","btn ghost","Annuler"); no.type = "button";
+    go.addEventListener("click", function(){ go.disabled = true; impRun(pl, base); });
+    no.addEventListener("click", function(){ impShow(null); });
+    act.appendChild(go); act.appendChild(no);
+    impShow(lines.concat([act]));
+  }
+  (function(){
+    var vn = $("view-notes"), dn = 0;
+    function hasFiles(e){ return e.dataTransfer && Array.prototype.indexOf.call(e.dataTransfer.types || [], "Files") !== -1; }
+    vn.addEventListener("dragenter", function(e){ if (hasFiles(e)){ dn++; vn.classList.add("mdrop"); } });
+    vn.addEventListener("dragleave", function(){ dn = Math.max(0, dn - 1); if (!dn) vn.classList.remove("mdrop"); });
+    vn.addEventListener("dragover", function(e){ if (hasFiles(e)) e.preventDefault(); });
+    vn.addEventListener("drop", function(e){
+      if (!hasFiles(e)) return;
+      e.preventDefault(); dn = 0; vn.classList.remove("mdrop");
+      dropEntries(e.dataTransfer).then(function(entries){
+        var v = memView();
+        if (v.type === "note" && noteOf(v.id) && entries.length && entries.every(function(x){ return !x.path.length; }) && entries.length <= 3){
+          var m = vn.querySelector(".mfiles-msg");
+          fileAdd(v.id, entries.map(function(x){ return x.file; }), m);
+        } else impStart(entries);
+      });
+    });
+    var fi = $("mem-impfiles-in"), di = $("mem-impdir-in");
+    $("mem-impfiles").addEventListener("click", function(){ fi.click(); });
+    $("mem-impdir").addEventListener("click", function(){ di.click(); });
+    fi.addEventListener("change", function(){ var l = inputEntries(fi.files); fi.value = ""; impStart(l); });
+    di.addEventListener("change", function(){ var l = inputEntries(di.files); di.value = ""; impStart(l); });
+    if (window.matchMedia && matchMedia("(pointer: coarse)").matches) $("mem-impdir").hidden = true;
+  })();
+
   function memItem(n, withMove){
     var li = el("div","mitem");
     var b = el("button","main"); b.type = "button";
@@ -1981,15 +2202,6 @@ dialog::backdrop{background:rgba(8,9,10,.5)}
     main.appendChild(title); main.appendChild(bar); main.appendChild(body);
     var linksEl = el("div","mlinksbox"); main.appendChild(linksEl);
     var filesEl = el("div","mfiles"); main.appendChild(filesEl);
-    var dragN = 0;
-    main.ondragenter = function(e){ if (e.dataTransfer && Array.prototype.indexOf.call(e.dataTransfer.types || [], "Files") !== -1){ dragN++; main.classList.add("mdrop"); } };
-    main.ondragleave = function(){ dragN = Math.max(0, dragN - 1); if (!dragN) main.classList.remove("mdrop"); };
-    main.ondragover = function(e){ if (e.dataTransfer && Array.prototype.indexOf.call(e.dataTransfer.types || [], "Files") !== -1) e.preventDefault(); };
-    main.ondrop = function(e){
-      if (!e.dataTransfer || !e.dataTransfer.files || !e.dataTransfer.files.length) return;
-      e.preventDefault(); dragN = 0; main.classList.remove("mdrop");
-      fileAdd(n.id, e.dataTransfer.files, filesEl.querySelector(".mfiles-msg"));
-    };
     var fld = el("label","mfield"); fld.appendChild(el("span",null,"Dossier"));
     var sel = folderSelect(noteFolder(n), "Boîte de réception", null);
     sel.addEventListener("change", function(){ var cur = noteOf(n.id); if (!cur) return; memFlush(); cur.folder = sel.value; save(); memRender(); });
