@@ -41,12 +41,13 @@ button,textarea,input{font-family:inherit; color:inherit; font-size:inherit}
 button{cursor:pointer}
 :focus-visible{outline:2px solid var(--accent); outline-offset:3px}
 
-.topbar{border-bottom:1px solid var(--line)}
-nav{display:flex; flex-wrap:wrap; align-items:center; gap:2px 26px; min-width:0}
+.topbar{border-bottom:1px solid var(--line); display:flex; align-items:center; gap:8px}
+nav{display:flex; flex-wrap:nowrap; align-items:center; gap:0 22px; min-width:0; flex:1 1 auto; overflow-x:auto; scrollbar-width:none; -webkit-overflow-scrolling:touch}
+nav::-webkit-scrollbar{display:none}
 .tab{background:none; border:0; min-height:48px; padding:0 2px; font-size:15px; font-weight:500; color:var(--muted); border-bottom:1.5px solid transparent; margin-bottom:-1px; white-space:nowrap}
 .tab:hover{color:var(--ink)}
 .tab[aria-selected="true"]{color:var(--ink); font-weight:600; border-bottom-color:var(--accent)}
-.gear{margin-left:auto; background:none; border:0; min-height:48px; min-width:44px; display:flex; align-items:center; justify-content:center; gap:8px; color:var(--muted); padding:0 6px; font-size:14px}
+.gear{flex:0 0 auto; margin-left:auto; background:none; border:0; min-height:48px; min-width:44px; display:flex; align-items:center; justify-content:center; gap:8px; color:var(--muted); padding:0 6px; font-size:14px}
 .gear:hover{color:var(--ink)}
 .gear[aria-selected="true"]{color:var(--ink)}
 
@@ -272,6 +273,30 @@ dialog::backdrop{background:rgba(8,9,10,.5)}
 #view-notes.mdrop .mem{outline:2px dashed var(--accent); outline-offset:6px; border-radius:14px}
 
 /* onglets Life Center, Finance, Santé, Bureau */
+.acc{border-top:1px solid var(--line)}
+.acc>summary{list-style:none; display:flex; align-items:center; gap:12px; min-height:60px; cursor:pointer; padding:6px 0}
+.acc>summary::-webkit-details-marker{display:none}
+.acc>summary h2{flex:1 1 auto; min-width:0; font-size:26px}
+.acc>summary .sub{flex:0 1 auto; text-align:right}
+.acc .chev{flex:0 0 auto; color:var(--muted); transition:transform .15s}
+.acc[open]>summary .chev{transform:rotate(180deg)}
+.acc>.accbody{padding:6px 0 22px; display:flex; flex-direction:column; gap:16px}
+.acc:last-child{border-bottom:1px solid var(--line)}
+@media (max-width:760px){
+  .shell{gap:22px; padding-top:6px}
+  .view{gap:22px}
+  .tab{font-size:14.5px; min-height:44px}
+  nav{gap:0 18px}
+  .gear-t{display:none}
+  .gear{min-width:44px}
+  .head{gap:4px}
+  h1{font-size:clamp(34px,10vw,44px)}
+  .wx{margin:0 -12px; min-height:40px; padding:2px 12px}
+  .temp{font-size:26px}
+  figure.quote{padding:14px 0; gap:4px}
+  blockquote{font-size:19px}
+  .acc>summary h2{font-size:23px}
+}
 .xsumrows{display:flex; flex-direction:column}
 .xsumrow{display:flex; align-items:center; gap:14px; width:100%; min-height:56px; padding:10px 4px; background:none; border:0; border-top:1px solid var(--line); text-align:left; color:inherit}
 .xsumrow:hover{background:var(--raised)}
@@ -392,11 +417,11 @@ h4.xname{font-family:var(--sans); font-size:16px; font-weight:600; line-height:1
       <button class="tab" role="tab" id="tab-finance" aria-controls="view-finance" aria-selected="false">Finance</button>
       <button class="tab" role="tab" id="tab-sante" aria-controls="view-sante" aria-selected="false">Santé</button>
       <button class="tab" role="tab" id="tab-bureau" aria-controls="view-bureau" aria-selected="false">Bureau</button>
-  <button class="gear" role="tab" id="tab-reglages" aria-controls="view-reglages" aria-selected="false">
-      <svg aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-      Réglages
-    </button>
     </nav>
+    <button class="gear" role="tab" id="tab-reglages" aria-controls="view-reglages" aria-selected="false">
+      <svg aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      <span class="gear-t">Réglages</span>
+    </button>
 
   </div>
 
@@ -443,19 +468,22 @@ h4.xname{font-family:var(--sans); font-size:16px; font-weight:600; line-height:1
       </section>
     </div>
 
-    <section aria-labelledby="h-habits" style="display:flex; flex-direction:column; gap:16px">
-      <div class="rowhead">
-        <h2 id="h-habits">Habitudes</h2>
-        <span class="sub" id="habit-count"></span>
-      </div>
-      <div class="habits" id="habit-grid"></div>
-    </section>
+    <details class="acc" id="acc-habits">
+      <summary><h2 id="h-habits">Habitudes</h2><span class="sub" id="habit-count"></span><svg class="chev" aria-hidden="true" width="18" height="18" viewBox="0 0 18 18"><path d="M4 7l5 5 5-5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+      <div class="accbody"><div class="habits" id="habit-grid"></div></div>
+    </details>
 
-    <section class="xsec" id="today-sum" aria-labelledby="h-sum" hidden></section>
+    <details class="acc" id="acc-sum">
+      <summary><h2 id="h-sum">Cette semaine</h2><span class="sub" id="sum-hint"></span><svg class="chev" aria-hidden="true" width="18" height="18" viewBox="0 0 18 18"><path d="M4 7l5 5 5-5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+      <div class="accbody xsec" id="today-sum"></div>
+    </details>
 
-    <section class="panel note" aria-labelledby="h-note">
+    <details class="acc" id="acc-note">
+      <summary><h2 id="h-note">Note rapide</h2><span class="sub">vers Memoria</span><svg class="chev" aria-hidden="true" width="18" height="18" viewBox="0 0 18 18"><path d="M4 7l5 5 5-5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+      <div class="accbody">
+    <div class="panel note">
       <div class="left">
-        <h2 id="h-note">Note rapide</h2>
+        <h3>Note rapide</h3>
         <p>Ce que tu écris ici arrive dans la boîte de réception de Memoria, prêt à être rangé.</p>
         <button class="link" id="go-notes">Ouvrir Memoria</button>
       </div>
@@ -467,7 +495,9 @@ h4.xname{font-family:var(--sans); font-size:16px; font-weight:600; line-height:1
           <button class="btn" id="note-save">Enregistrer la note</button>
         </div>
       </div>
-    </section>
+    </div>
+      </div>
+    </details>
   </div>
 
   <!-- CALENDRIER -->
@@ -1022,10 +1052,23 @@ h4.xname{font-family:var(--sans); font-size:16px; font-weight:600; line-height:1
       if (v) v.hidden = !on;
     });
     window.scrollTo({ top: 0, behavior: "smooth" });
+    if (tab && tab.scrollIntoView && tab.id !== "tab-reglages"){ try{ tab.scrollIntoView({ inline:"center", block:"nearest" }); }catch(e){} }
     if (tab && tab.id === "tab-calendrier") loadCalMonth();
     if (tab && tab.id === "tab-reglages") renderBackup();
   }
   tabs.forEach(function(t){ t.addEventListener("click", function(){ show(t); }); });
+  // menus déroulants de l'accueil : l'état ouvert/fermé est retenu sur cet appareil
+  (function(){
+    var K = KEY + "-acc", st = {};
+    try{ st = JSON.parse(localStorage.getItem(K) || "{}") || {}; }catch(e){}
+    Array.prototype.forEach.call(document.querySelectorAll("details.acc"), function(d){
+      if (st[d.id]) d.open = true;
+      d.addEventListener("toggle", function(){
+        st[d.id] = d.open ? 1 : 0;
+        try{ localStorage.setItem(K, JSON.stringify(st)); }catch(e){}
+      });
+    });
+  })();
 
   // ---------- tâches ----------
   // Les tâches cochées un jour précédent sont supprimées automatiquement.
@@ -3779,7 +3822,8 @@ h4.xname{font-family:var(--sans); font-size:16px; font-weight:600; line-height:1
     var sec = $("today-sum"); if (!sec) return;
     sec.textContent = "";
     var rows = sumRows();
-    var h = el("div","rowhead"), h2 = el("h2", null, "Cette semaine"); h2.id = "h-sum"; h.appendChild(h2); sec.appendChild(h);
+    var nb = rows.filter(function(r){ return r.bad; }).length, hint = $("sum-hint");
+    if (hint) hint.textContent = rows.length ? rows.length + (rows.length > 1 ? " points" : " point") + (nb ? ", " + nb + " à surveiller" : "") : "";
     if (rows.length){
       var box = el("div","xsumrows");
       rows.forEach(function(r){
@@ -3821,7 +3865,6 @@ h4.xname{font-family:var(--sans); font-size:16px; font-weight:600; line-height:1
       }
     });
     sec.appendChild(f);
-    sec.hidden = false;
   }
 
   function renderExtra(which){
