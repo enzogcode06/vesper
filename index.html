@@ -249,6 +249,15 @@ dialog::backdrop{background:rgba(8,9,10,.5)}
 .mact{display:flex; flex-wrap:wrap; gap:10px}
 .mfoot{display:flex; align-items:center; gap:14px; flex-wrap:wrap; padding-top:6px}
 .mlinksbox{display:flex; flex-direction:column; gap:10px}
+.mfiles{display:flex; flex-direction:column; gap:8px}
+.mfiles-h{display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap}
+.mfile{display:flex; align-items:center; gap:12px; border:1px solid var(--line); border-radius:12px; padding:8px 10px; background:var(--panel)}
+.mfile .ext{flex:none; min-width:46px; text-align:center; font-size:11.5px; font-weight:700; letter-spacing:.04em; padding:6px 4px; border-radius:8px; background:var(--raised); color:var(--accent)}
+.mfile .open{flex:1 1 auto; min-width:0; text-align:left; background:none; border:0; padding:6px 2px; min-height:44px; display:flex; flex-direction:column; gap:2px; color:var(--ink)}
+.mfile .nm{font-size:15px; font-weight:600; overflow-wrap:anywhere}
+.mfile .mt{font-size:13px; color:var(--muted)}
+.mdrop{outline:2px dashed var(--accent); outline-offset:6px; border-radius:14px}
+.mfiles-msg{font-size:13px; color:var(--muted); min-height:18px}
 .msec{font-size:14px; font-weight:600}
 .mlinks{display:flex; flex-wrap:wrap; gap:8px}
 .mchip{min-height:42px; padding:0 16px; border-radius:999px; border:1px solid var(--line-strong); background:none; font-size:14px; font-weight:500; color:var(--accent)}
@@ -1225,12 +1234,196 @@ dialog::backdrop{background:rgba(8,9,10,.5)}
       : nn + (nn > 1 ? " notes" : " note") + (nf ? ", " + nf + (nf > 1 ? " dossiers" : " dossier") : "");
   }
 
+  // ---------- fichiers joints (Excel, PowerPoint, PDF…) ----------
+  // Le fichier lui-même vit dans le dépôt GitHub (dossier files/) ; la note ne garde que sa fiche
+  // (nom, taille). Une copie est gardée sur l'appareil (IndexedDB) pour ouvrir sans réseau.
+  var FILE_MAX = 25 * 1024 * 1024;
+  var fdb = null, fq = {};
+  function fdbOpen(){
+    if (fdb) return fdb;
+    fdb = new Promise(function(res, rej){
+      if (!window.indexedDB){ rej(new Error("noidb")); return; }
+      var r = indexedDB.open("vesper-files", 1);
+      r.onupgradeneeded = function(){ r.result.createObjectStore("blobs"); r.result.createObjectStore("q"); };
+      r.onsuccess = function(){ res(r.result); };
+      r.onerror = function(){ rej(r.error); };
+    });
+    fdb.catch(function(){});
+    return fdb;
+  }
+  function fdbDo(store, mode, fn){
+    return fdbOpen().then(function(db){ return new Promise(function(res, rej){
+      var tx = db.transaction(store, mode), rq = fn(tx.objectStore(store));
+      tx.oncomplete = function(){ res(rq ? rq.result : undefined); };
+      tx.onerror = tx.onabort = function(){ rej(tx.error); };
+    }); });
+  }
+  function fGet(id){ return fdbDo("blobs", "readonly", function(st){ return st.get(id); }); }
+  function fHas(id){ return fdbDo("blobs", "readonly", function(st){ return st.getKey(id); }).then(function(k){ return k !== undefined; }); }
+  function fSet(id, b){ return fdbDo("blobs", "readwrite", function(st){ return st.put(b, id); }); }
+  function fDrop(id){ return fdbDo("blobs", "readwrite", function(st){ return st.delete(id); }); }
+  function qList(){ return fdbDo("q", "readonly", function(st){ return st.get("ops"); }).then(function(v){ return v || []; }); }
+  function qMut(fn){
+    return fdbOpen().then(function(db){ return new Promise(function(res, rej){
+      var tx = db.transaction("q", "readwrite"), st = tx.objectStore("q"), g = st.get("ops"), out = [];
+      g.onsuccess = function(){ out = fn(g.result || []) || []; st.put(out, "ops"); };
+      tx.oncomplete = function(){ fq = {}; out.forEach(function(o){ fq[o.id] = o.op; }); res(out); };
+      tx.onerror = tx.onabort = function(){ rej(tx.error); };
+    }); });
+  }
+  function attExt(name){ var m = /\.[A-Za-z0-9]{1,8}$/.exec(String(name || "")); return m ? m[0].toLowerCase() : ""; }
+  function attPath(a){ return "files/" + a.id + attExt(a.name); }
+  function attSize(n){
+    if (n < 1024) return n + " o";
+    if (n < 1048576) return Math.round(n / 1024) + " Ko";
+    return (n / 1048576).toFixed(1).replace(".", ",") + " Mo";
+  }
+  function blobB64(b){
+    return new Promise(function(res, rej){
+      var r = new FileReader();
+      r.onload = function(){ res(String(r.result).split(",")[1] || ""); };
+      r.onerror = function(){ rej(r.error); };
+      r.readAsDataURL(b);
+    });
+  }
+  function ghFileUp(o){
+    return fGet(o.id).then(function(blob){
+      if (!blob) return;
+      return blobB64(blob).then(function(c){
+        return ghFetch("/contents/" + encodeURI(o.path), "PUT", JSON.stringify({ message: "fichier " + o.id, content: c }))
+          .catch(function(err){ if (err.message !== "conflict") throw err; });
+      });
+    });
+  }
+  function ghFileDel(o){
+    return ghFetch("/contents/" + encodeURI(o.path), "GET").then(function(j){
+      return ghFetch("/contents/" + encodeURI(o.path), "DELETE", JSON.stringify({ message: "suppression " + o.id, sha: j.sha }));
+    }).catch(function(err){ if (err.message !== "404") throw err; });
+  }
+  var filesBusy = false;
+  function filesSync(){
+    if (!ghOn() || filesBusy) return Promise.resolve();
+    filesBusy = true;
+    return qList().then(function(ops){
+      var chain = Promise.resolve();
+      ops.forEach(function(o){
+        chain = chain.then(function(){
+          return (o.op === "put" ? ghFileUp(o) : ghFileDel(o)).then(function(){
+            return qMut(function(list){ return list.filter(function(x){ return !(x.id === o.id && x.op === o.op); }); });
+          });
+        });
+      });
+      return chain;
+    }).catch(function(){}).then(function(){ filesBusy = false; memRefreshFiles(); });
+  }
+  function fileFetchRemote(a){
+    return fetch("https://api.github.com/repos/" + state.ghRepo + "/contents/" + encodeURI(attPath(a)),
+      { headers: { Authorization: "Bearer " + state.ghToken, Accept: "application/vnd.github.raw" }, cache: "no-store" })
+      .then(function(r){ if (!r.ok) throw new Error(String(r.status)); return r.blob(); });
+  }
+  function fileAdd(noteId, list, msgEl){
+    var n = noteOf(noteId); if (!n || !list || !list.length) return;
+    memFlush();
+    var files = Array.prototype.slice.call(list), skipped = [];
+    var chain = Promise.resolve();
+    files.forEach(function(f){
+      if (f.size > FILE_MAX){ skipped.push(f.name); return; }
+      chain = chain.then(function(){
+        var id = "a" + Date.now() + Math.floor(Math.random() * 1000);
+        var att = { id: id, name: f.name, size: f.size, type: f.type || "", at: Date.now() };
+        return fSet(id, f).then(function(){
+          return qMut(function(l){ return l.concat([{ op:"put", id:id, path:attPath(att) }]); });
+        }).then(function(){
+          var cur = noteOf(noteId); if (!cur) return;
+          cur.files = (cur.files || []).concat([att]);
+          save();
+        });
+      });
+    });
+    return chain.then(function(){
+      if (skipped.length && msgEl) msgEl.textContent = "Trop gros (25 Mo maximum) : " + skipped.join(", ");
+      memRefreshFiles(); memRenderSide(); filesSync();
+    }).catch(function(){
+      if (msgEl) msgEl.textContent = "Ce navigateur ne permet pas d'enregistrer des fichiers ici.";
+    });
+  }
+  function fileRemove(noteId, attId){
+    var n = noteOf(noteId); if (!n) return;
+    var att = (n.files || []).filter(function(a){ return a.id === attId; })[0]; if (!att) return;
+    memFlush();
+    n.files = n.files.filter(function(a){ return a.id !== attId; });
+    save();
+    qMut(function(l){
+      var pending = l.some(function(o){ return o.id === attId && o.op === "put"; });
+      var rest = l.filter(function(o){ return o.id !== attId; });
+      return pending ? rest : rest.concat([{ op:"del", id:attId, path:attPath(att) }]);
+    }).then(function(){ return fDrop(attId); }).catch(function(){}).then(function(){ memRefreshFiles(); memRenderSide(); filesSync(); });
+  }
+  function memDropFiles(n){ (n.files || []).forEach(function(a){ fileRemove(n.id, a.id); }); }
+  function fileOpen(a, msgEl){
+    function out(blob){
+      var url = URL.createObjectURL(blob), l = document.createElement("a");
+      l.href = url; l.download = a.name; l.rel = "noopener"; document.body.appendChild(l); l.click(); l.remove();
+      setTimeout(function(){ URL.revokeObjectURL(url); }, 60000);
+    }
+    fGet(a.id).then(function(b){
+      if (b){ out(b); return; }
+      if (!ghOn()){ msgEl.textContent = "Ce fichier n'est pas sur cet appareil et la synchro GitHub n'est pas configurée."; return; }
+      msgEl.textContent = "Téléchargement de « " + a.name + " »…";
+      return fileFetchRemote(a).then(function(blob){
+        return fSet(a.id, blob).catch(function(){}).then(function(){ msgEl.textContent = ""; out(blob); memRefreshFiles(); });
+      });
+    }).catch(function(){
+      msgEl.textContent = "Impossible de récupérer ce fichier pour l'instant. Il n'est peut-être pas encore envoyé depuis l'autre appareil.";
+    });
+  }
+  function memRefreshFiles(){
+    if (memEd && memEd.filesEl && document.body.contains(memEd.filesEl)) memRenderFiles(memEd.filesEl, memEd.id);
+  }
+  function memRenderFiles(box, noteId){
+    var n = noteOf(noteId); if (!n) return;
+    var keepMsg = box.querySelector(".mfiles-msg"), msgText = keepMsg ? keepMsg.textContent : "";
+    box.textContent = "";
+    var head = el("div","mfiles-h"), t = el("span","msec","Fichiers");
+    var add = el("button","btn ghost","Ajouter un fichier"); add.type = "button";
+    var inp = document.createElement("input"); inp.type = "file"; inp.multiple = true; inp.hidden = true;
+    var msg = el("div","mfiles-msg"); msg.setAttribute("aria-live", "polite"); msg.textContent = msgText;
+    add.addEventListener("click", function(){ inp.click(); });
+    inp.addEventListener("change", function(){ msg.textContent = ""; var l = inp.files; fileAdd(noteId, l, msg); inp.value = ""; });
+    head.appendChild(t); head.appendChild(add); head.appendChild(inp);
+    box.appendChild(head);
+    var files = n.files || [];
+    if (!files.length) box.appendChild(el("p","sub","Excel, PowerPoint, PDF, Word… Glisse un fichier ici ou touche « Ajouter un fichier »."));
+    files.forEach(function(a){
+      var row = el("div","mfile");
+      var ex = (attExt(a.name).slice(1) || "fichier").toUpperCase().slice(0, 5);
+      row.appendChild(el("span","ext", ex));
+      var ob = el("button","open"); ob.type = "button";
+      ob.appendChild(el("span","nm", a.name));
+      var mt = el("span","mt", attSize(a.size || 0));
+      ob.appendChild(mt);
+      ob.setAttribute("aria-label", "Ouvrir " + a.name);
+      ob.addEventListener("click", function(){ msg.textContent = ""; fileOpen(a, msg); });
+      row.appendChild(ob);
+      row.appendChild(twoStep("Retirer", "Confirmer", function(){ fileRemove(noteId, a.id); }));
+      box.appendChild(row);
+      fHas(a.id).then(function(h){
+        var st = fq[a.id] === "put" ? (ghOn() ? "en attente d'envoi" : "sur cet appareil, pas encore synchronisé")
+               : h ? "synchronisé" : "à télécharger au premier clic";
+        mt.textContent = attSize(a.size || 0) + " · " + st;
+      }).catch(function(){ mt.textContent = attSize(a.size || 0) + " · indisponible dans ce navigateur"; });
+    });
+    box.appendChild(msg);
+  }
+  qList().then(function(l){ l.forEach(function(o){ fq[o.id] = o.op; }); filesSync(); }).catch(function(){});
+
   function memItem(n, withMove){
     var li = el("div","mitem");
     var b = el("button","main"); b.type = "button";
     b.appendChild(el("span","t", noteTitle(n)));
-    var body = noteBody(n);
-    if (body) b.appendChild(el("span","s", body));
+    var body = noteBody(n), nf = (n.files || []).length;
+    if (!body && nf) body = n.files.map(function(a){ return a.name; }).join(", ");
+    if (body) b.appendChild(el("span","s", (nf && noteBody(n) ? "📎 " + nf + " · " : "") + body));
     b.appendChild(el("span","d", new Date(n.updatedAt || n.at || Date.now()).toLocaleDateString("fr-FR", { day:"numeric", month:"short" })));
     b.addEventListener("click", function(){ memGo("note", n.id); });
     li.appendChild(b);
@@ -1787,6 +1980,16 @@ dialog::backdrop{background:rgba(8,9,10,.5)}
     var bar = rtToolbar(body, memCommit);
     main.appendChild(title); main.appendChild(bar); main.appendChild(body);
     var linksEl = el("div","mlinksbox"); main.appendChild(linksEl);
+    var filesEl = el("div","mfiles"); main.appendChild(filesEl);
+    var dragN = 0;
+    main.ondragenter = function(e){ if (e.dataTransfer && Array.prototype.indexOf.call(e.dataTransfer.types || [], "Files") !== -1){ dragN++; main.classList.add("mdrop"); } };
+    main.ondragleave = function(){ dragN = Math.max(0, dragN - 1); if (!dragN) main.classList.remove("mdrop"); };
+    main.ondragover = function(e){ if (e.dataTransfer && Array.prototype.indexOf.call(e.dataTransfer.types || [], "Files") !== -1) e.preventDefault(); };
+    main.ondrop = function(e){
+      if (!e.dataTransfer || !e.dataTransfer.files || !e.dataTransfer.files.length) return;
+      e.preventDefault(); dragN = 0; main.classList.remove("mdrop");
+      fileAdd(n.id, e.dataTransfer.files, filesEl.querySelector(".mfiles-msg"));
+    };
     var fld = el("label","mfield"); fld.appendChild(el("span",null,"Dossier"));
     var sel = folderSelect(noteFolder(n), "Boîte de réception", null);
     sel.addEventListener("change", function(){ var cur = noteOf(n.id); if (!cur) return; memFlush(); cur.folder = sel.value; save(); memRender(); });
@@ -1794,11 +1997,13 @@ dialog::backdrop{background:rgba(8,9,10,.5)}
     var del = twoStep("Supprimer la note", "Confirmer la suppression", function(){
       memFlush();
       var f = noteFolder(n);
+      memDropFiles(n);
       state.notes = state.notes.filter(function(x){ return x.id !== n.id; });
       memGo(f ? "folder" : "inbox", f);
     });
     var foot = el("div","mfoot"); foot.appendChild(del); main.appendChild(foot);
-    memEd = { id:n.id, titleEl:title, bodyEl:body, linksEl:linksEl, bar:bar };
+    memEd = { id:n.id, titleEl:title, bodyEl:body, linksEl:linksEl, filesEl:filesEl, bar:bar };
+    memRenderFiles(filesEl, n.id);
     memRenderLinks();
     if (memFocus === "title"){ memFocus = ""; title.focus(); }
   }
@@ -1810,7 +2015,7 @@ dialog::backdrop{background:rgba(8,9,10,.5)}
     main.appendChild(el("p","mem-crumb","Recherche"));
     main.appendChild(el("h2","mem-h","« " + q + " »"));
     var fs = state.folders.filter(function(f){ return memNorm(folderName(f)).indexOf(qn) !== -1; }).sort(byName);
-    var ns = state.notes.filter(function(n){ return memNorm(n.text).indexOf(qn) !== -1; }).sort(byRecent);
+    var ns = state.notes.filter(function(n){ return memNorm(n.text).indexOf(qn) !== -1 || (n.files || []).some(function(a){ return memNorm(a.name).indexOf(qn) !== -1; }); }).sort(byRecent);
     if (!fs.length && !ns.length){
       main.appendChild(el("p","empty","Aucun résultat. Essaie un autre mot."));
       return;
@@ -2449,6 +2654,7 @@ dialog::backdrop{background:rgba(8,9,10,.5)}
     }).then(function(){
       sync.lastSync = Date.now(); sync.dirty = false; persistSync();
       setSyncStatus(syncLabel(), "ok");
+      filesSync();
     }).catch(function(err){
       var m = err.message;
       if (m === "conflict") sync.again = true;
