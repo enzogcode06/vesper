@@ -35,6 +35,18 @@
 }
 *{box-sizing:border-box}
 html,body{margin:0}
+/* écran d'ouverture */
+#splash{--sp-bg:#FFFFFF; --sp-g1:#D9B86C; --sp-g2:#B08A3E; --sp-g3:#7C5C22; --sp-ink:#8A6A2F;
+  position:fixed; inset:0; z-index:99999; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:clamp(14px,3vh,26px); background:var(--sp-bg); transition:opacity .65s cubic-bezier(.4,0,.2,1), transform .65s cubic-bezier(.4,0,.2,1)}
+@media (prefers-color-scheme: dark){ #splash{--sp-bg:#0A0B0D; --sp-g1:#F0D69A; --sp-g2:#D4B26A; --sp-g3:#A9873F; --sp-ink:#D4B26A} }
+#splash.out{opacity:0; transform:scale(1.045); pointer-events:none}
+#splash.out.fast{transition-duration:.25s}
+#sp-svg{width:min(58vw,250px); height:auto; overflow:visible}
+#sp-word{display:flex; padding-left:.5em; font-family:var(--serif); font-size:clamp(24px,6.4vw,32px); letter-spacing:.5em; color:var(--sp-ink); height:1.3em}
+#sp-word span{display:inline-block; opacity:0; transform:translateY(14px) scale(1.5); filter:blur(10px); transition:opacity .7s cubic-bezier(.22,.8,.24,1), transform .8s cubic-bezier(.22,.8,.24,1), filter .8s cubic-bezier(.22,.8,.24,1)}
+#sp-word.go span{opacity:1; transform:none; filter:none}
+#sp-word.still span{transition:opacity .5s}
+
 body{background:var(--bg); color:var(--ink); font-family:var(--sans); -webkit-font-smoothing:antialiased; min-height:100vh}
 .shell{max-width:1240px; margin:0 auto; padding:16px clamp(16px,5vw,56px) 80px; display:flex; flex-direction:column; gap:40px}
 button,textarea,input{font-family:inherit; color:inherit; font-size:inherit}
@@ -273,28 +285,6 @@ dialog::backdrop{background:rgba(8,9,10,.5)}
 #view-notes.mdrop .mem{outline:2px dashed var(--accent); outline-offset:6px; border-radius:14px}
 
 /* onglets Life Center, Finance, Santé, Bureau */
-/* mouvement : doux, court, désactivé si l'appareil demande moins d'animations */
-@media (prefers-reduced-motion:no-preference){
-  :root{--ease:cubic-bezier(.22,.8,.24,1)}
-  .btn,.kill,.link,.habit,.tkbtn,.xsumrow,.xseg button{transition:transform .14s var(--ease), background-color .2s, border-color .2s, opacity .2s, color .2s}
-  .btn:active,.habit:active{transform:scale(.97)}
-  .tkbtn:active .box,.habit:active .mark{transform:scale(.88)}
-  .box,.mark{transition:transform .14s var(--ease), background-color .22s, border-color .22s}
-  .tklab{transition:color .25s}
-  .xcard,.panel,.agenda,.habit{transition:border-color .2s, transform .14s var(--ease), box-shadow .25s}
-  @media (hover:hover){ .xcard:hover,.habit:hover{border-color:var(--line-strong)} }
-  .view.enter>*{animation:rise .46s var(--ease) both; animation-delay:calc(var(--i,0) * 55ms)}
-  @keyframes rise{from{opacity:0; transform:translateY(12px)}to{opacity:1; transform:none}}
-  .box.pop,.mark.pop{animation:pop .42s var(--ease)}
-  .box.pop svg,.mark.pop svg{animation:tick .32s .06s var(--ease) both}
-  @keyframes pop{0%{transform:scale(.7)}55%{transform:scale(1.22)}100%{transform:scale(1)}}
-  @keyframes tick{from{opacity:0; transform:scale(.4) rotate(-12deg)}to{opacity:1; transform:none}}
-  .xmsg:not(:empty),.flash.on{animation:fadein .35s var(--ease)}
-  @keyframes fadein{from{opacity:0; transform:translateY(-3px)}to{opacity:1; transform:none}}
-  .xbar span{transition:width .7s var(--ease)}
-  .xstrip span.on,.week span.on{animation:dotin .4s var(--ease) both}
-  @keyframes dotin{from{transform:scale(.3); opacity:.2}to{transform:none; opacity:1}}
-}
 .acc{border-top:1px solid var(--line)}
 .acc>summary{list-style:none; display:flex; align-items:center; gap:12px; min-height:60px; cursor:pointer; padding:6px 0}
 .acc>summary::-webkit-details-marker{display:none}
@@ -434,9 +424,185 @@ h4.xname{font-family:var(--sans); font-size:16px; font-weight:600; line-height:1
   .mem-back{display:inline-flex}
 }
 @media (max-width:520px){.wrow{grid-template-columns:minmax(64px,1fr) 28px 36px 30px minmax(40px,2fr) 30px; gap:6px}}
+/* finitions : or, reliefs, lumière */
+:root{
+  --gold:linear-gradient(115deg,#D8B867 0%,#A9843A 48%,#C9A558 100%);
+  --edge:rgba(255,255,255,.85);
+  --lift:0 1px 1px rgba(40,30,10,.04), 0 18px 34px -22px rgba(70,52,16,.32);
+  --halo:rgba(201,165,88,.17);
+}
+@media (prefers-color-scheme: dark){
+  :root{--gold:linear-gradient(115deg,#F0D69A 0%,#C9A55A 50%,#E3C27A 100%); --edge:rgba(255,255,255,.055); --lift:0 22px 44px -26px rgba(0,0,0,.9); --halo:rgba(212,178,106,.11)}
+}
+body{font-feature-settings:"kern","liga"; letter-spacing:.003em}
+body::before{content:""; position:fixed; inset:0; z-index:-1; pointer-events:none;
+  background:radial-gradient(980px 560px at 50% -180px,var(--halo),transparent 72%), radial-gradient(640px 420px at 105% 105%,var(--halo),transparent 70%)}
+::selection{background:color-mix(in srgb,var(--accent) 32%, transparent)}
+.panel,.xcard,.habit{position:relative; box-shadow:inset 0 1px 0 var(--edge), var(--lift); border-color:color-mix(in srgb,var(--accent) 17%, var(--line))}
+.panel::before,.xcard::before,.habit::before{content:""; position:absolute; left:24px; right:24px; top:-1px; height:1px; pointer-events:none; background:linear-gradient(90deg,transparent,var(--accent) 50%,transparent); opacity:.6}
+.xgacc::before{left:20px; right:20px}
+.acc{border-top-color:color-mix(in srgb,var(--accent) 24%, var(--line))}
+figure.quote{border-color:color-mix(in srgb,var(--accent) 30%, transparent)}
+nav{position:relative}
+.tab{letter-spacing:.012em}
+.tab[aria-selected="true"]{border-bottom-color:transparent}
+.tabind{position:absolute; left:0; bottom:0; height:2px; width:0; border-radius:2px; background:var(--gold)}
+.xbar span{background:var(--gold)}
+.xbar span.over{background:#d64545}
+.week span.on,.xstrip span.on{background:var(--gold)}
+.tkbtn[aria-pressed="true"] .box,.habit[aria-pressed="true"] .mark{background:var(--gold); border-color:transparent}
+.habit[aria-pressed="true"]{border-color:var(--accent)}
+.xnum.big,.habit .n{background:var(--gold); -webkit-background-clip:text; background-clip:text; color:transparent; -webkit-text-fill-color:transparent}
+.xnum.big.neg,.xnum.xlate{background:none; -webkit-text-fill-color:#d64545; color:#d64545}
+.btn{box-shadow:inset 0 1px 0 rgba(255,255,255,.16), 0 10px 20px -12px rgba(20,16,6,.55)}
+.btn:hover{opacity:1; box-shadow:inset 0 1px 0 rgba(255,255,255,.2), 0 12px 26px -10px rgba(169,132,58,.75)}
+.btn.ghost{box-shadow:none}
+.btn.ghost:hover{opacity:1; border-color:var(--accent)}
+.btn.danger{box-shadow:none}
+input:focus,textarea:focus,select:focus{outline:none; border-color:var(--accent); box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 22%, transparent)}
+.ev li.now{background:linear-gradient(90deg,color-mix(in srgb,var(--accent) 14%,var(--raised)),var(--raised))}
+.ev .pin{box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 24%, transparent)}
+.acc>summary h2,.rowhead h2{letter-spacing:-.005em}
+/* mouvement : doux, court, désactivé si l'appareil demande moins d'animations */
+@media (prefers-reduced-motion:no-preference){
+  :root{--ease:cubic-bezier(.22,.8,.24,1)}
+  .btn,.kill,.link,.habit,.tkbtn,.xsumrow,.xseg button{transition:transform .14s var(--ease), background-color .2s, border-color .2s, opacity .2s, color .2s}
+  .btn:active,.habit:active{transform:scale(.93)}
+  .tkbtn:active .box,.habit:active .mark{transform:scale(.8)}
+  .box,.mark{transition:transform .14s var(--ease), background-color .22s, border-color .22s}
+  .tklab{transition:color .25s}
+  .xcard,.panel,.agenda,.habit{transition:border-color .2s, transform .14s var(--ease), box-shadow .25s}
+  @media (hover:hover){ .xcard:hover,.habit:hover{border-color:var(--line-strong)} }
+  .view.enter>*{animation:rise .8s var(--ease) both; animation-delay:calc(var(--i,0) * 95ms)}
+  @keyframes rise{from{opacity:0; transform:translateY(38px) scale(.985); filter:blur(7px)}60%{filter:blur(0)}to{opacity:1; transform:none; filter:none}}
+  .box,.mark{position:relative}
+  .box.pop,.mark.pop{animation:pop .6s var(--ease)}
+  .box.pop::after,.mark.pop::after{content:""; position:absolute; inset:-3px; border-radius:50%; border:2px solid var(--accent); animation:ring .75s ease-out forwards; pointer-events:none}
+  @keyframes ring{from{transform:scale(.7); opacity:.95}to{transform:scale(2.6); opacity:0}}
+  .box.pop svg,.mark.pop svg{animation:tick .32s .06s var(--ease) both}
+  @keyframes pop{0%{transform:scale(.55)}50%{transform:scale(1.55)}75%{transform:scale(.92)}100%{transform:scale(1)}}
+  @keyframes tick{from{opacity:0; transform:scale(.4) rotate(-12deg)}to{opacity:1; transform:none}}
+  .xmsg:not(:empty),.flash.on{animation:fadein .35s var(--ease)}
+  @keyframes fadein{from{opacity:0; transform:translateY(-3px)}to{opacity:1; transform:none}}
+  .xbar span{transition:width 1.3s var(--ease); position:relative; overflow:hidden}
+  .xbar span::after{content:""; position:absolute; inset:0; background:linear-gradient(100deg,transparent 25%,rgba(255,255,255,.65) 50%,transparent 75%); transform:translateX(-130%); animation:shine 1.5s .35s ease-out 1 both}
+  @keyframes shine{to{transform:translateX(130%)}}
+  .ins{animation:ins .95s var(--ease)}
+  @keyframes ins{0%{opacity:0; transform:translateX(-46px) scale(.96); box-shadow:0 0 0 0 color-mix(in srgb,var(--accent) 55%, transparent)}45%{opacity:1; transform:none}100%{box-shadow:0 0 0 22px transparent}}
+  .tabind{transition:transform .6s var(--ease), width .6s var(--ease)}
+  @media (hover:hover){ .xcard:hover,.habit:hover{transform:translateY(-4px); box-shadow:inset 0 1px 0 var(--edge),0 26px 44px -22px rgba(70,52,16,.45)} }
+  .xstrip span.on,.week span.on{animation:dotin .4s var(--ease) both}
+  @keyframes dotin{from{transform:scale(.3); opacity:.2}to{transform:none; opacity:1}}
+}
+
 </style>
 </head>
 <body>
+<div id="splash" aria-hidden="true">
+  <svg id="sp-svg" viewBox="60 70 354 372" role="presentation" focusable="false">
+    <defs>
+      <linearGradient id="sp-gold" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="var(--sp-g1)"/><stop offset=".52" stop-color="var(--sp-g2)"/><stop offset="1" stop-color="var(--sp-g3)"/>
+      </linearGradient>
+      <radialGradient id="sp-glow" cx=".5" cy=".5" r=".5">
+        <stop offset="0" stop-color="var(--sp-g1)" stop-opacity=".95"/><stop offset=".35" stop-color="var(--sp-g1)" stop-opacity=".35"/><stop offset="1" stop-color="var(--sp-g1)" stop-opacity="0"/>
+      </radialGradient>
+    </defs>
+    <circle id="sp-halo" cx="258" cy="248" r="150" fill="url(#sp-glow)" opacity="0"/>
+    <path id="sp-v" d="M100 124 H196 L260 316 L322 124 H374 L288 408 H232 Z" fill="url(#sp-gold)" opacity="0"/>
+    <path id="sp-line" d="M100 124 H196 L260 316 L322 124 H374 L288 408 H232 Z" fill="none" stroke="url(#sp-gold)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+    <path id="sp-fly" d="M100 124 C 90 20, 330 -10, 348 86 C 358 156, 296 172, 258 214" fill="none" stroke="none"/>
+    <g id="sp-trail"></g>
+    <g id="sp-burst"></g>
+    <g id="sp-head" opacity="0">
+      <circle r="15" fill="url(#sp-glow)"/>
+      <path id="sp-star" d="M0 -9 C1.2 -2.2 2.2 -1.2 9 0 C2.2 1.2 1.2 2.2 0 9 C-1.2 2.2 -2.2 1.2 -9 0 C-2.2 -1.2 -1.2 -2.2 0 -9 Z" fill="#fff"/>
+    </g>
+  </svg>
+  <div id="sp-word" aria-hidden="true"><span>V</span><span>e</span><span>s</span><span>p</span><span>e</span><span>r</span></div>
+</div>
+<script>
+(function(){
+  var sp = document.getElementById("splash"); if (!sp) return;
+  var qs = location.search.indexOf("splash") !== -1;
+  if (!qs && navigator.webdriver){ sp.remove(); return; }
+  var reduce = false; try{ reduce = matchMedia("(prefers-reduced-motion: reduce)").matches; }catch(e){}
+  window.__splashOn = true;
+  var $ = function(i){ return document.getElementById(i); };
+  var NS = "http://www.w3.org/2000/svg", done = false;
+  function finish(fast){
+    if (done) return; done = true;
+    sp.classList.add("out"); if (fast) sp.classList.add("fast");
+    try{ window.dispatchEvent(new Event("vesper-splash-start-out")); }catch(e){}
+    setTimeout(function(){ sp.remove(); window.__splashOn = false; try{ window.dispatchEvent(new Event("vesper-splash-done")); }catch(e){} }, fast ? 260 : 700);
+  }
+  sp.addEventListener("click", function(){ finish(true); });
+  if (reduce){
+    $("sp-v").setAttribute("opacity", "1"); $("sp-line").style.display = "none"; $("sp-word").classList.add("go", "still");
+    setTimeout(function(){ finish(false); }, 1100); return;
+  }
+  var line = $("sp-line"), fly = $("sp-fly"), L = line.getTotalLength(), FL = fly.getTotalLength();
+  line.style.strokeDasharray = L; line.style.strokeDashoffset = L;
+  var T0 = .4, T1 = 2.15, T2 = 2.9, TW = T2 + .1, TEND = 4.25;
+  var N = 46, trail = $("sp-trail"), tc = [], i;
+  for (i = 0; i < N; i++){ var c = document.createElementNS(NS, "circle"); c.setAttribute("fill", "url(#sp-gold)"); c.setAttribute("opacity", "0"); trail.appendChild(c); tc.push(c); }
+  var burst = $("sp-burst"), parts = [];
+  for (i = 0; i < 26; i++){
+    var p = document.createElementNS(NS, "circle"), a = Math.random() * Math.PI * 2, d = 70 + Math.random() * 120;
+    p.setAttribute("r", (1.4 + Math.random() * 3).toFixed(1)); p.setAttribute("fill", i % 3 ? "url(#sp-gold)" : "#fff"); p.setAttribute("opacity", "0");
+    burst.appendChild(p); parts.push({ n:p, a:a, d:d, s:.85 + Math.random() * .5 });
+  }
+  var ring = document.createElementNS(NS, "circle"); ring.setAttribute("fill", "none"); ring.setAttribute("stroke", "url(#sp-gold)"); ring.setAttribute("stroke-width", "2"); ring.setAttribute("opacity", "0"); burst.appendChild(ring);
+  var head = $("sp-head"), star = $("sp-star"), halo = $("sp-halo"), vfill = $("sp-v"), word = $("sp-word");
+  var CX = 258, CY = 214;
+  var spans = word.children; for (i = 0; i < spans.length; i++) spans[i].style.transitionDelay = (i * 0.1) + "s";
+  function eio(x){ return -(Math.cos(Math.PI * x) - 1) / 2; }
+  function eout(x){ return 1 - Math.pow(1 - x, 3); }
+  function pos(t){
+    if (t < T0) return null;
+    if (t < T1) return line.getPointAtLength(eio((t - T0) / (T1 - T0)) * L);
+    if (t < T2) return fly.getPointAtLength((1 - Math.pow(1 - (t - T1) / (T2 - T1), 2)) * FL);
+    return fly.getPointAtLength(FL);
+  }
+  var start = null, wordOn = false;
+  function frame(now){
+    if (done) return;
+    if (start === null) start = now;
+    var t = (now - start) / 1000;
+    if (t > T0 && t < T2){
+      var q = pos(t); head.setAttribute("opacity", "1");
+      head.setAttribute("transform", "translate(" + q.x.toFixed(1) + " " + q.y.toFixed(1) + ")");
+      star.setAttribute("transform", "rotate(" + (t * 220).toFixed(0) + ") scale(" + (1 + .25 * Math.sin(t * 18)).toFixed(2) + ")");
+    } else head.setAttribute("opacity", "0");
+    if (t < T1) line.style.strokeDashoffset = (L - eio(Math.max(0, (t - T0) / (T1 - T0))) * L).toFixed(1);
+    else line.style.strokeDashoffset = 0;
+    for (var k = 0; k < N; k++){
+      var tk = t - (k + 1) * .011, c = tc[k];
+      if (t > TW || tk < T0){ c.setAttribute("opacity", "0"); continue; }
+      var pk = pos(Math.min(tk, T2)), f = 1 - k / N;
+      c.setAttribute("cx", pk.x.toFixed(1)); c.setAttribute("cy", pk.y.toFixed(1));
+      c.setAttribute("r", (6.2 * Math.pow(f, .8) + .5).toFixed(2)); c.setAttribute("opacity", (Math.pow(f, 1.5) * .8).toFixed(2));
+    }
+    if (t >= T2){
+      var b = (t - T2);
+      halo.setAttribute("opacity", Math.max(0, Math.min(.9, b < .25 ? b / .25 * .9 : .9 - (b - .25) * .75)).toFixed(2));
+      vfill.setAttribute("opacity", Math.min(1, b / .55).toFixed(2));
+      line.style.opacity = String(Math.max(0, 1 - b / .55));
+      var bt = Math.min(1, b / 1.05);
+      for (var m = 0; m < parts.length; m++){
+        var P = parts[m], e = eout(Math.min(1, b / (.9 * P.s)));
+        P.n.setAttribute("cx", (CX + Math.cos(P.a) * P.d * e).toFixed(1)); P.n.setAttribute("cy", (CY + Math.sin(P.a) * P.d * e).toFixed(1));
+        P.n.setAttribute("opacity", Math.max(0, 1 - b / (1 * P.s)).toFixed(2));
+      }
+      ring.setAttribute("cx", CX); ring.setAttribute("cy", CY); ring.setAttribute("r", (10 + 150 * eout(bt)).toFixed(1)); ring.setAttribute("opacity", Math.max(0, .8 - bt).toFixed(2));
+      if (!wordOn && b > .12){ wordOn = true; word.classList.add("go"); }
+    }
+    if (t >= TEND) return finish(false);
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
 <div class="shell">
 
   <div class="topbar">
@@ -1076,7 +1242,9 @@ h4.xname{font-family:var(--sans); font-size:16px; font-weight:600; line-height:1
   // ---------- onglets ----------
   var tabs = Array.prototype.slice.call(document.querySelectorAll('[role="tab"]'));
   // ---------- mouvement ----------
-  var popKey = "", barPrev = {}, numPrev = {};
+  var popKey = "", insKey = "", barPrev = {}, numPrev = {};
+  function insMark(id){ insKey = id; setTimeout(function(){ insKey = ""; }, 0); }
+  function insIf(node, id){ if (insKey && insKey === id) node.classList.add("ins"); }
   function motionOK(){ try{ return !(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches); }catch(e){ return true; } }
   function enterView(v){
     if (!v || !motionOK()) return;
@@ -1089,7 +1257,7 @@ h4.xname{font-family:var(--sans); font-size:16px; font-weight:600; line-height:1
     var from = numPrev[key]; numPrev[key] = to;
     if (from == null) from = 0;
     if (!motionOK() || from === to){ node.textContent = fmt(to); return; }
-    var t0 = null, dur = 650;
+    var t0 = null, dur = 1200;
     node.textContent = fmt(from);
     function step(t){
       if (t0 === null) t0 = t;
@@ -1112,7 +1280,7 @@ h4.xname{font-family:var(--sans); font-size:16px; font-weight:600; line-height:1
       body.style.overflow = "hidden";
       var from = opening ? { height:"0px", paddingTop:"0px", paddingBottom:"0px", opacity:0 } : { height:h + "px", paddingTop:pt, paddingBottom:pb, opacity:1 };
       var to = opening ? { height:h + "px", paddingTop:pt, paddingBottom:pb, opacity:1 } : { height:"0px", paddingTop:"0px", paddingBottom:"0px", opacity:0 };
-      var a = body.animate([from, to], { duration: opening ? 300 : 220, easing: opening ? "cubic-bezier(.22,.8,.24,1)" : "ease-in" });
+      var a = body.animate([from, to], { duration: opening ? 480 : 340, easing: opening ? "cubic-bezier(.22,.8,.24,1)" : "ease-in" });
       d._anim = a;
       a.onfinish = function(){ body.style.overflow = ""; d._anim = null; if (!opening) d.open = false; };
       a.oncancel = function(){ body.style.overflow = ""; };
@@ -1137,10 +1305,22 @@ h4.xname{font-family:var(--sans); font-size:16px; font-weight:600; line-height:1
     }
     window.scrollTo({ top: 0, behavior: "smooth" });
     if (tab && tab.scrollIntoView && tab.id !== "tab-reglages"){ try{ tab.scrollIntoView({ inline:"center", block:"nearest" }); }catch(e){} }
+    placeInd();
     if (tab && tab.id === "tab-calendrier") loadCalMonth();
     if (tab && tab.id === "tab-reglages") renderBackup();
   }
   tabs.forEach(function(t){ t.addEventListener("click", function(){ show(t); }); });
+  // trait doré qui glisse sous l'onglet actif
+  var tabInd = document.createElement("span"); tabInd.className = "tabind"; tabInd.setAttribute("aria-hidden", "true");
+  (function(){ var nv = document.querySelector("nav"); if (nv) nv.appendChild(tabInd); })();
+  function placeInd(){
+    var t = document.querySelector('nav .tab[aria-selected="true"]');
+    if (!t){ tabInd.style.width = "0px"; return; }
+    tabInd.style.width = t.offsetWidth + "px"; tabInd.style.transform = "translateX(" + t.offsetLeft + "px)";
+  }
+  window.addEventListener("resize", placeInd);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(placeInd);
+  setTimeout(placeInd, 60);
   // menus déroulants de l'accueil : l'état ouvert/fermé est retenu sur cet appareil
   (function(){
     var K = KEY + "-acc", st = {};
@@ -1200,7 +1380,7 @@ h4.xname{font-family:var(--sans); font-size:16px; font-weight:600; line-height:1
         state.tasks = state.tasks.filter(function(x){ return x.id !== t.id; });
         save(); renderTasks();
       }));
-      ul.appendChild(li);
+      insIf(li, t.id); ul.appendChild(li);
     });
     popKey = "";
     $("task-hint").hidden = !state.tasks.some(function(t){ return t.done; });
@@ -3446,7 +3626,7 @@ h4.xname{font-family:var(--sans); font-size:16px; font-weight:600; line-height:1
   function lifeGoalCard(g){
     var steps = g.steps || [], done = steps.filter(function(x){ return x.d; }).length;
     var pct = steps.length ? done / steps.length * 100 : (g.done ? 100 : 0), due = lifeDue(g);
-    var card = el("details","xcard xgacc"); card.open = !!lifeOpen[g.id];
+    var card = el("details","xcard xgacc"); card.open = !!lifeOpen[g.id]; insIf(card, g.id);
     accAnim(card, ".xgbody");
     card.addEventListener("toggle", function(){ if (card.open) lifeOpen[g.id] = 1; else delete lifeOpen[g.id]; lifeOpenSave(); });
     var sm = el("summary");
@@ -3525,7 +3705,7 @@ h4.xname{font-family:var(--sans); font-size:16px; font-weight:600; line-height:1
     f.addEventListener("submit", function(e){
       e.preventDefault(); var v = t.value.trim(); if (!v) return;
       var ng = { id: nid("g"), title:v, area:a.value, due:d.value || "", steps:[], done:false, at:Date.now() };
-      state.goals.push(ng); lifeOpen[ng.id] = 1; lifeOpenSave();
+      state.goals.push(ng); insMark(ng.id); lifeOpen[ng.id] = 1; lifeOpenSave();
       xSave("life");
     });
     sec.appendChild(f);
@@ -3606,7 +3786,7 @@ h4.xname{font-family:var(--sans); font-size:16px; font-weight:600; line-height:1
       var v = numOf(am.value);
       if (!(v > 0)){ msg.textContent = "Saisis un montant supérieur à 0."; return; }
       if (!dt.value){ msg.textContent = "Choisis une date."; return; }
-      state.txs.push({ id: nid("x"), kind:kind, amount:Math.round(v * 100) / 100, label:lb.value.trim(), cat: kind === "rev" ? "Revenu" : cat.value, date:dt.value, at:Date.now() });
+      state.txs.push({ id: nid("x"), kind:kind, amount:Math.round(v * 100) / 100, label:lb.value.trim(), cat: kind === "rev" ? "Revenu" : cat.value, date:dt.value, at:Date.now() }); insMark(state.txs[state.txs.length - 1].id);
       finMonth = ymOf(dt.value); xSave("finance");
     });
     sec.appendChild(f); root.appendChild(sec);
@@ -3647,7 +3827,7 @@ h4.xname{font-family:var(--sans); font-size:16px; font-weight:600; line-height:1
       li.appendChild(l);
       li.appendChild(el("span","xamt " + (x.kind === "rev" ? "pos" : ""), (x.kind === "rev" ? "+" : "−") + eur(x.amount)));
       li.appendChild(killBtn("Supprimer l'opération " + (x.label || x.cat), function(){ state.txs = state.txs.filter(function(y){ return y.id !== x.id; }); xSave("finance"); }));
-      ul.appendChild(li);
+      insIf(li, x.id); ul.appendChild(li);
     });
     ls.appendChild(ul); root.appendChild(ls);
     // historique 6 mois
@@ -3677,7 +3857,7 @@ h4.xname{font-family:var(--sans); font-size:16px; font-weight:600; line-height:1
     ef.addEventListener("submit", function(e){
       e.preventDefault(); var v = numOf(et.value), n = en.value.trim();
       if (!n || !(v > 0)) return;
-      state.savings.push({ id:nid("s"), name:n, target:v, saved:0, at:Date.now() }); xSave("finance");
+      state.savings.push({ id:nid("s"), name:n, target:v, saved:0, at:Date.now() }); insMark(state.savings[state.savings.length - 1].id); xSave("finance");
     });
     es.appendChild(ef);
     if (!state.savings.length) es.appendChild(el("p","empty","Aucun objectif d'épargne. Crée-en un pour suivre ce que tu mets de côté."));
@@ -3695,7 +3875,7 @@ h4.xname{font-family:var(--sans); font-size:16px; font-weight:600; line-height:1
       mn.addEventListener("click", function(){ var v = numOf(mi.value); if (!(v > 0)) return; s.saved = Math.max(0, Math.round((s.saved - v) * 100) / 100); xSave("finance"); });
       c.appendChild(mf);
       c.appendChild(twoStep("Supprimer", "Confirmer la suppression", function(){ state.savings = state.savings.filter(function(x){ return x.id !== s.id; }); xSave("finance"); }));
-      sg.appendChild(c);
+      insIf(c, s.id); sg.appendChild(c);
     });
     es.appendChild(sg); root.appendChild(es);
     root.appendChild(el("p","sub xnote","Les montants sont saisis à la main : rien n'est relié à ta banque. Outil de suivi personnel, pas un conseil financier."));
@@ -3771,7 +3951,7 @@ h4.xname{font-family:var(--sans); font-size:16px; font-weight:600; line-height:1
     f.addEventListener("submit", function(e){
       e.preventDefault(); var m = Math.round(+du.value);
       if (!dt.value) return;
-      state.workouts.push({ id:nid("w"), type:sp.value, minutes: m > 0 ? m : 0, date:dt.value, note:nt.value.trim(), at:Date.now() }); xSave("sante");
+      state.workouts.push({ id:nid("w"), type:sp.value, minutes: m > 0 ? m : 0, date:dt.value, note:nt.value.trim(), at:Date.now() }); insMark(state.workouts[state.workouts.length - 1].id); xSave("sante");
     });
     sec.appendChild(f);
     var ul = el("ul","xtx");
@@ -3779,7 +3959,7 @@ h4.xname{font-family:var(--sans); font-size:16px; font-weight:600; line-height:1
       var li = el("li"), l = el("div","xl"); l.appendChild(el("span","xname2", w.type + (w.minutes ? " · " + w.minutes + " min" : "")));
       l.appendChild(el("span","sub", dFr(w.date) + (w.note ? " · " + w.note : ""))); li.appendChild(l);
       li.appendChild(killBtn("Supprimer la séance du " + dFr(w.date), function(){ state.workouts = state.workouts.filter(function(x){ return x.id !== w.id; }); xSave("sante"); }));
-      ul.appendChild(li);
+      insIf(li, w.id); ul.appendChild(li);
     });
     if (!state.workouts.length) sec.appendChild(el("p","empty","Aucune séance enregistrée. Ajoute ta première ci-dessus."));
     sec.appendChild(ul);
@@ -3866,7 +4046,7 @@ h4.xname{font-family:var(--sans); font-size:16px; font-weight:600; line-height:1
     f.appendChild(t); f.appendChild(d); f.appendChild(r);
     f.addEventListener("submit", function(e){
       e.preventDefault(); var v = t.value.trim(); if (!v) return;
-      state.asks.push({ id:nid("a"), title:v, details:d.value.trim(), agent:a.value, status:"todo", result:"", at:Date.now() }); xSave("bureau");
+      state.asks.push({ id:nid("a"), title:v, details:d.value.trim(), agent:a.value, status:"todo", result:"", at:Date.now() }); insMark(state.asks[state.asks.length - 1].id); xSave("bureau");
     });
     root.appendChild(f);
     var board = el("div","xboard");
@@ -3893,7 +4073,7 @@ h4.xname{font-family:var(--sans); font-size:16px; font-weight:600; line-height:1
           mv.addEventListener("click", function(){ x.status = o[0]; xSave("bureau"); }); act.appendChild(mv);
         });
         act.appendChild(twoStep("Supprimer", "Confirmer la suppression", function(){ state.asks = state.asks.filter(function(y){ return y.id !== x.id; }); xSave("bureau"); }));
-        card.appendChild(act); c.appendChild(card);
+        card.appendChild(act); insIf(card, x.id); c.appendChild(card);
       });
       board.appendChild(c);
     });
@@ -3967,11 +4147,11 @@ h4.xname{font-family:var(--sans); font-size:16px; font-weight:600; line-height:1
       e.preventDefault();
       if (kind === "dep"){
         var v = numOf(a.value); if (!(v > 0)){ msg.textContent = "Saisis un montant supérieur à 0."; return; }
-        state.txs.push({ id:nid("x"), kind:"dep", amount:Math.round(v * 100) / 100, label:"", cat:c.value, date:todayIso(), at:Date.now() });
+        state.txs.push({ id:nid("x"), kind:"dep", amount:Math.round(v * 100) / 100, label:"", cat:c.value, date:todayIso(), at:Date.now() }); insMark(state.txs[state.txs.length - 1].id);
         sumNote = "Dépense ajoutée : " + eur(v) + ", " + c.value + "."; save(); renderExtra();
       } else {
         var m = Math.round(+du.value);
-        state.workouts.push({ id:nid("w"), type:sp.value, minutes: m > 0 ? m : 0, date:todayIso(), note:"", at:Date.now() });
+        state.workouts.push({ id:nid("w"), type:sp.value, minutes: m > 0 ? m : 0, date:todayIso(), note:"", at:Date.now() }); insMark(state.workouts[state.workouts.length - 1].id);
         sumNote = "Séance ajoutée : " + sp.value + (m > 0 ? ", " + m + " min" : "") + "."; save(); renderExtra();
       }
     });
@@ -4017,7 +4197,7 @@ h4.xname{font-family:var(--sans); font-size:16px; font-weight:600; line-height:1
     var i = $("task-new");
     var v = i.value.trim();
     if (!v) return;
-    state.tasks.push({ id:"t"+Date.now(), title:v, due:"", done:false });
+    state.tasks.push({ id:"t"+Date.now(), title:v, due:"", done:false }); insMark(state.tasks[state.tasks.length - 1].id);
     i.value = "";
     save(); renderTasks();
   });
@@ -4076,7 +4256,8 @@ h4.xname{font-family:var(--sans); font-size:16px; font-weight:600; line-height:1
   renderNotes();
   renderExtra();
   initSettings();
-  enterView($("view-today"));
+  if (window.__splashOn) window.addEventListener("vesper-splash-start-out", function(){ enterView($("view-today")); });
+  else enterView($("view-today"));
   renderAgendaEntry();
   initWxDialog();
   loadWeather();
